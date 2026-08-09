@@ -89,6 +89,30 @@ if command -v fzf >/dev/null 2>&1; then
     "
 fi
 
+
+# FZF powered by fd
+if command -v fzf >/dev/null 2>&1; then
+    if command -v fd >/dev/null 2>&1; then
+        FZF_FD_COMMAND="fd"
+    elif command -v fdfind >/dev/null 2>&1; then
+        FZF_FD_COMMAND="fdfind"
+    fi
+
+    if [[ -n "${FZF_FD_COMMAND:-}" ]]; then
+        export FZF_DEFAULT_COMMAND="$FZF_FD_COMMAND --hidden --strip-cwd-prefix --exclude .git"
+        export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+        export FZF_ALT_C_COMMAND="$FZF_FD_COMMAND --type d --hidden --exclude .git"
+
+        export FZF_CTRL_T_OPTS="
+        --preview 'bat --color=always --line-range :200 {} 2>/dev/null || ls {}'
+        "
+
+        export FZF_ALT_C_OPTS="
+        --preview 'eza --tree --level=2 {} 2>/dev/null'
+        "
+    fi
+fi
+
 # History substring search
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
@@ -96,4 +120,17 @@ bindkey '^[[B' history-substring-search-down
 # zoxide
 if command -v zoxide >/dev/null 2>&1; then
     eval "$(zoxide init zsh)"
+fi
+
+# Direnv
+if command -v direnv >/dev/null 2>&1; then
+    eval "$(direnv hook zsh)"
+fi
+
+# Git delta
+if command -v delta >/dev/null 2>&1; then
+    git config --global core.pager delta
+    git config --global interactive.diffFilter 'delta --color-only'
+    git config --global delta.navigate true
+    git config --global delta.side-by-side true
 fi

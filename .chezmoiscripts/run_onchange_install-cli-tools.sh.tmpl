@@ -21,11 +21,11 @@ install_pacman() {
 }
 
 if command -v brew >/dev/null 2>&1; then
-    install_brew fzf zoxide ripgrep fd bat eza
+    install_brew fzf zoxide ripgrep fd bat eza direnv delta
 elif command -v apt >/dev/null 2>&1; then
-    install_apt fzf ripgrep fd-find bat
+    install_apt fzf ripgrep fd-find bat direnv delta
     install_apt zoxide
     install_apt eza
 elif command -v pacman >/dev/null 2>&1; then
-    install_pacman fzf zoxide ripgrep fd bat eza
+    install_pacman fzf zoxide ripgrep fd bat eza direnv delta
 fi
