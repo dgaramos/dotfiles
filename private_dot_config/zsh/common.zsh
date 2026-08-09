@@ -40,3 +40,21 @@ alias cze='chezmoi edit'
 
 # Always make it obvious which machine this shell belongs to.
 PROMPT='%{$fg_bold[green]%}➜  %{$fg[cyan]%}%n@%m %{$fg[blue]%}%~%{$reset_color%} $(git_prompt_info)'
+
+# ============================================================
+# Optional modern CLI tools
+# ============================================================
+
+if command -v eza >/dev/null 2>&1; then
+    alias ls='eza'
+    alias ll='eza -lah'
+    alias la='eza -la'
+    alias tree='eza --tree'
+fi
+
+if command -v bat >/dev/null 2>&1; then
+    alias cat='bat'
+fi
+
+# FZF
+[[ -f "$HOME/.fzf.zsh" ]] && source "$HOME/.fzf.zsh"
