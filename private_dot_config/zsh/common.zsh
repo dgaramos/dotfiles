@@ -47,13 +47,25 @@ PROMPT='%{$fg_bold[green]%}➜  %{$fg[cyan]%}%n@%m %{$fg[blue]%}%~%{$reset_color
 
 if command -v eza >/dev/null 2>&1; then
     alias ls='eza'
-    alias ll='eza -lah'
-    alias la='eza -la'
-    alias tree='eza --tree'
+    alias ll='eza -lah --icons'
+    alias la='eza -la --icons'
+    alias tree='eza --tree --icons'
 fi
 
 if command -v bat >/dev/null 2>&1; then
     alias cat='bat'
+elif command -v batcat >/dev/null 2>&1; then
+    alias cat='batcat'
+fi
+
+if command -v rg >/dev/null 2>&1; then
+    alias grep='rg'
+fi
+
+if command -v fd >/dev/null 2>&1; then
+    alias find='fd'
+elif command -v fdfind >/dev/null 2>&1; then
+    alias find='fdfind'
 fi
 
 # FZF
