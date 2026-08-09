@@ -57,7 +57,22 @@ if command -v bat >/dev/null 2>&1; then
 fi
 
 # FZF
-[[ -f "$HOME/.fzf.zsh" ]] && source "$HOME/.fzf.zsh"
+if command -v fzf >/dev/null 2>&1; then
+    if [[ -f "$HOME/.fzf.zsh" ]]; then
+        source "$HOME/.fzf.zsh"
+    fi
+
+    export FZF_DEFAULT_OPTS="
+    --height 40%
+    --layout=reverse
+    --border
+    "
+fi
+
+# Better history search with fzf
+if command -v fzf >/dev/null 2>&1; then
+    bindkey '^R' fzf-history-widget
+fi
 
 # History substring search
 bindkey '^[[A' history-substring-search-up

@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+
+install_brew() {
+    if command -v brew >/dev/null 2>&1; then
+        brew install "$@"
+    fi
+}
+
+install_apt() {
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update
+        sudo apt install -y "$@"
+    fi
+}
+
+install_pacman() {
+    if command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --needed --noconfirm "$@"
+    fi
+}
+
+if command -v brew >/dev/null 2>&1; then
+    install_brew fzf
+elif command -v apt >/dev/null 2>&1; then
+    install_apt fzf
+elif command -v pacman >/dev/null 2>&1; then
+    install_pacman fzf
+fi
