@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+
+mkdir -p "$ZSH_CUSTOM/plugins"
+
+if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions/.git" ]; then
+    git clone \
+        https://github.com/zsh-users/zsh-autosuggestions \
+        "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+fi
+
+if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/.git" ]; then
+    git clone \
+        https://github.com/zsh-users/zsh-syntax-highlighting \
+        "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+fi
