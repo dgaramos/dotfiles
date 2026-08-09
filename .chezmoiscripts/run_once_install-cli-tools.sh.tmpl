@@ -22,8 +22,11 @@ install_pacman() {
 
 if command -v brew >/dev/null 2>&1; then
     install_brew fzf
+    install_brew zoxide
 elif command -v apt >/dev/null 2>&1; then
     install_apt fzf
+    install_apt zoxide
 elif command -v pacman >/dev/null 2>&1; then
     install_pacman fzf
+    install_pacman zoxide
 fi
