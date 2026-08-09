@@ -58,8 +58,16 @@ fi
 
 # FZF
 if command -v fzf >/dev/null 2>&1; then
-    if [[ -f "$HOME/.fzf.zsh" ]]; then
-        source "$HOME/.fzf.zsh"
+    if command -v brew >/dev/null 2>&1; then
+        FZF_PREFIX="$(brew --prefix fzf)"
+    fi
+
+    if [[ -n "$FZF_PREFIX" ]]; then
+        [[ -f "$FZF_PREFIX/shell/completion.zsh" ]] && \
+            source "$FZF_PREFIX/shell/completion.zsh"
+
+        [[ -f "$FZF_PREFIX/shell/key-bindings.zsh" ]] && \
+            source "$FZF_PREFIX/shell/key-bindings.zsh"
     fi
 
     export FZF_DEFAULT_OPTS="
@@ -67,11 +75,6 @@ if command -v fzf >/dev/null 2>&1; then
     --layout=reverse
     --border
     "
-fi
-
-# Better history search with fzf
-if command -v fzf >/dev/null 2>&1; then
-    bindkey '^R' fzf-history-widget
 fi
 
 # History substring search
