@@ -59,13 +59,13 @@ elif command -v batcat >/dev/null 2>&1; then
 fi
 
 if command -v rg >/dev/null 2>&1; then
-    alias grep='rg'
+    alias rgrep='rg'
 fi
 
 if command -v fd >/dev/null 2>&1; then
-    alias find='fd'
+    alias ff='fd'
 elif command -v fdfind >/dev/null 2>&1; then
-    alias find='fdfind'
+    alias ff='fdfind'
 fi
 
 # FZF
