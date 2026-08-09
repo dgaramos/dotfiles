@@ -58,3 +58,7 @@ fi
 
 # FZF
 [[ -f "$HOME/.fzf.zsh" ]] && source "$HOME/.fzf.zsh"
+
+# History substring search
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
