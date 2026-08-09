@@ -3,20 +3,20 @@ set -eu
 
 install_brew() {
     if command -v brew >/dev/null 2>&1; then
-        brew install "$@"
+        brew install "$@" || true
     fi
 }
 
 install_apt() {
     if command -v apt >/dev/null 2>&1; then
         sudo apt update
-        sudo apt install -y "$@"
+        sudo apt install -y "$@" || true
     fi
 }
 
 install_pacman() {
     if command -v pacman >/dev/null 2>&1; then
-        sudo pacman -S --needed --noconfirm "$@"
+        sudo pacman -S --needed --noconfirm "$@" || true
     fi
 }
 
