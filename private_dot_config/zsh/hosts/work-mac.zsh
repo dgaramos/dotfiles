@@ -39,13 +39,13 @@ export NVM_DIR="$HOME/.nvm"
 [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
 [[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
 
-# Only expose the GitHub token when explicitly requested.
-github-token() {
-    export AUTH_TOKEN="$(gh auth token)"
-    echo "AUTH_TOKEN exported for this shell."
+# Helper to expose GitHub CLI authentication for the current shell session.
+github-env() {
+    export GH_AUTH="$(gh auth token)"
+    echo "GitHub CLI auth exported for this shell."
 }
 
-github-token-clear() {
-    unset AUTH_TOKEN
-    echo "AUTH_TOKEN removed from this shell."
+github-env-clear() {
+    unset GH_AUTH
+    echo "GitHub CLI auth removed from this shell."
 }
