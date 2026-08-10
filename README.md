@@ -1,152 +1,178 @@
 # Dotfiles
 
-Configuração centralizada de ambiente usando chezmoi.
+<p align="center">
 
-O objetivo deste repositório é manter um ambiente consistente entre
-máquinas, separando configurações pessoais, profissionais e específicas
-de hardware.
+![chezmoi](https://img.shields.io/badge/chezmoi-dotfiles-blue)
+![shell](https://img.shields.io/badge/shell-zsh-green)
+![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 
-## Filosofia
+</p>
 
-- Uma única fonte da verdade para configurações de shell
-- Instalação automatizada de ferramentas
-- Configurações portáveis entre macOS e Linux
-- Separação por perfil e máquina
+Personal, reproducible shell environment managed with chezmoi.
 
-## Máquinas suportadas
+This repository provides a portable developer workstation setup with
+shared shell improvements, automated CLI tooling installation, and
+machine-specific configuration profiles.
 
-### macOS pessoal
+## Features
 
-Profile:
+-   Centralized ZSH configuration
+-   Cross-platform support
+-   Automated CLI installation
+-   Machine/profile separation
+-   Secret-safe configuration
+-   Reproducible workstation setup
 
-    profile: personal
-    role: mac
+## Supported Machines
 
-### macOS trabalho
+  Machine        Profile    Role
+  -------------- ---------- -----------
+  Personal Mac   personal   mac
+  Work Mac       work       work-mac
+  Raspberry Pi   personal   homelab
+  Steam Deck     personal   steamdeck
 
-Profile:
+## Structure
 
-    profile: work
-    role: mac
+``` text
+.
+├── .chezmoi.toml.tmpl
+├── .chezmoiscripts/
+├── dot_zshrc.tmpl
+└── private_dot_config/
+    └── zsh/
+        ├── common.zsh
+        ├── personal.zsh
+        ├── work.zsh
+        └── hosts/
+```
 
-Inclui ferramentas de desenvolvimento como SDKMAN, Java e NVM.
-
-### Raspberry Pi
-
-Ambiente Debian/Linux.
-
-Compatibilidades: - fd → fdfind - bat → batcat
-
-### Steam Deck
-
-Ambiente SteamOS/Arch Linux.
-
-Antes de instalar pacotes:
-
-      ``` bash
-      sudo steamos-readonly disable
-      ```
-
-## Ferramentas instaladas
+## Tooling
 
 ### Shell
 
-- zsh-autosuggestions
-- zsh-syntax-highlighting
-- zsh-history-substring-search
+-   zsh-autosuggestions
+-   zsh-syntax-highlighting
+-   zsh-history-substring-search
 
-### Navegação
+### Navigation
 
-- zoxide
-- fzf
+-   zoxide
+-   fzf
 
-### Busca
+### Search
 
-- ripgrep
-- fd
-
-Aliases:
-
-    ff     -> fd/fdfind
-    rgrep  -> ripgrep
-
-### Visualização
-
-- bat
-- eza
+-   ripgrep
+-   fd
 
 Aliases:
 
-    cat   -> bat/batcat
-    ll    -> eza -lah
-    tree  -> eza --tree
+``` text
+ff -> fd/fdfind
+rgrep -> ripgrep
+```
+
+### File Viewing
+
+-   bat
+-   eza
+
+Aliases:
+
+``` text
+cat -> bat/batcat
+ll -> eza -lah
+tree -> eza --tree
+```
 
 ### Git
 
-- delta
+Powered by git-delta:
 
-Configurações: - pager delta - diff side-by-side - navegação
+-   delta pager
+-   side-by-side diff
+-   navigation
 
-### Desenvolvimento
+### Development
 
-- direnv
-- SDKMAN
-- NVM
+-   direnv
+-   SDKMAN
+-   NVM
+-   Java helpers
 
-## Estrutura
+## Installation
 
-    .
-    ├── dot_zshrc.tmpl
-    ├── private_dot_config/
-    │   └── zsh/
-    │       ├── common.zsh
-    │       ├── personal.zsh
-    │       ├── work.zsh
-    │       └── hosts/
-    └── .chezmoiscripts/
+Install chezmoi:
 
-## Uso
+``` bash
+brew install chezmoi
+```
 
-Aplicar configurações:
+Initialize:
 
-      ``` bash
-      chezmoi apply
-      ```
+``` bash
+chezmoi init <repository>
+chezmoi apply
+```
 
-Recarregar shell:
+Review:
 
-      ``` bash
-      exec zsh
-      ```
+``` bash
+chezmoi diff
+chezmoi status
+```
 
-Ver alterações:
+## Platform Notes
 
-      ``` bash
-      chezmoi diff
-      ```
+Debian compatibility:
 
-Ver estado:
+  Tool   Debian name
+  ------ -------------
+  fd     fdfind
+  bat    batcat
 
-      ``` bash
-      chezmoi status
-      ```
+Steam Deck:
 
-## Bootstrap
+``` bash
+sudo steamos-readonly disable
+```
 
-Scripts automáticos:
+## Secrets
 
-- instalação de plugins ZSH
-- instalação de ferramentas CLI
-- adaptação por sistema operacional
+This repository contains no secrets.
 
-Suportados:
+Never commit:
 
-- Homebrew
-- apt
-- pacman
+-   API tokens
+-   passwords
+-   private keys
+-   credential files
+-   secret .env files
 
-## Próximos passos
+## Git Workflow
 
-- Melhorar documentação de bootstrap
-- Revisar publicação no GitHub
-- Adicionar mais automações de desenvolvimento
+Commits use Conventional Commits:
+
+``` text
+type(scope): description
+```
+
+Examples:
+
+``` text
+feat(zsh): add helper
+fix(chezmoi): improve bootstrap
+docs(readme): update documentation
+chore(repo): update metadata
+```
+
+## Roadmap
+
+-   Improve bootstrap validation
+-   Add automated checks
+-   Expand workstation automation
+-   Document recovery procedures
+
+## License
+
+Private configuration repository.
