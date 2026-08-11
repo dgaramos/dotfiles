@@ -43,10 +43,3 @@ export NVM_DIR="$HOME/.nvm"
 if command -v claude >/dev/null 2>&1; then
     alias claudio-lite='claude --model claude-sonnet-4-6 --dangerously-skip-permissions'
 fi
-
-
-# Machine-local configuration.
-# This file is intentionally not managed by chezmoi.
-if [[ -f "$HOME/.config/zsh/local.zsh" ]]; then
-    source "$HOME/.config/zsh/local.zsh"
-fi

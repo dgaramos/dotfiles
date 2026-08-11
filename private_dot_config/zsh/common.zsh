@@ -134,3 +134,9 @@ if command -v delta >/dev/null 2>&1; then
     git config --global delta.navigate true
     git config --global delta.side-by-side true
 fi
+
+# Machine-local configuration.
+# This file is intentionally not managed by chezmoi.
+if [[ -f "$HOME/.config/zsh/local.zsh" ]]; then
+    source "$HOME/.config/zsh/local.zsh"
+fi
