@@ -44,13 +44,9 @@ if command -v claude >/dev/null 2>&1; then
     alias claudio-lite='claude --model claude-sonnet-4-6 --dangerously-skip-permissions'
 fi
 
-# Helper to expose GitHub CLI authentication for the current shell session.
-github-env() {
-    export GH_AUTH="$(gh auth token)"
-    echo "GitHub CLI auth exported for this shell."
-}
 
-github-env-clear() {
-    unset GH_AUTH
-    echo "GitHub CLI auth removed from this shell."
-}
+# Machine-local configuration.
+# This file is intentionally not managed by chezmoi.
+if [[ -f "$HOME/.config/zsh/local.zsh" ]]; then
+    source "$HOME/.config/zsh/local.zsh"
+fi

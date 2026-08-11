@@ -149,6 +149,57 @@ Never commit:
 -   credential files
 -   secret .env files
 
+## Machine-local configuration
+
+Some environment variables or machine-specific values should exist only on a single machine and must not be managed by chezmoi.
+
+For the Work Mac, `hosts/work-mac.zsh` loads an optional local file:
+
+```zsh
+if [[ -f "$HOME/.config/zsh/local.zsh" ]]; then
+    source "$HOME/.config/zsh/local.zsh"
+fi
+```
+
+Create it directly on the machine:
+
+```bash
+mkdir -p ~/.config/zsh
+touch ~/.config/zsh/local.zsh
+chmod 600 ~/.config/zsh/local.zsh
+```
+
+Use this file for local-only environment variables and sensitive configuration:
+
+```zsh
+export SOME_LOCAL_VARIABLE="value"
+```
+
+For credentials that can be retrieved dynamically, prefer using the system credential store or CLI authentication instead of storing the secret value directly.
+
+Example:
+
+```zsh
+if command -v gh >/dev/null 2>&1; then
+    export GITHUB_TOKEN="$(gh auth token 2>/dev/null)"
+fi
+```
+
+`~/.config/zsh/local.zsh` is intentionally **not managed by chezmoi and must never be committed to this repository**.
+
+The configuration model is:
+
+```text
+chezmoi-managed config
+        |
+        └── hosts/work-mac.zsh
+                 |
+                 └── ~/.config/zsh/local.zsh
+                        └── local-only values
+```
+
+This keeps the repository reproducible while allowing each machine to have private runtime configuration.
+
 ## Git Workflow
 
 Commits use Conventional Commits:
