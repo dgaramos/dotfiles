@@ -135,6 +135,19 @@ if command -v delta >/dev/null 2>&1; then
     git config --global delta.side-by-side true
 fi
 
+# Machine-local environment variables managed by local-env.
+# Clear previously managed variables first so removed values are not
+# inherited by a new shell.
+if [[ -f "$HOME/.config/local-env/names" ]]; then
+    while IFS= read -r name; do
+        [[ -n "$name" ]] && unset "$name"
+    done < "$HOME/.config/local-env/names"
+fi
+
+if [[ -f "$HOME/.config/local-env/env" ]]; then
+    source "$HOME/.config/local-env/env"
+fi
+
 # Machine-local configuration.
 # This file is intentionally not managed by chezmoi.
 if [[ -f "$HOME/.config/zsh/local.zsh" ]]; then

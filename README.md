@@ -8,36 +8,41 @@
 
 </p>
 
-Personal, reproducible shell environment managed with chezmoi.
+Personal, reproducible shell environment managed with [chezmoi](https://www.chezmoi.io/).
 
-This repository provides a portable developer workstation setup with
-shared shell improvements, automated CLI tooling installation, and
-machine-specific configuration profiles.
+This repository provides a portable developer workstation setup with shared shell improvements, automated CLI tooling installation, machine-specific configuration profiles, and support for machine-local configuration outside version control.
 
 ## Features
 
--   Centralized ZSH configuration
--   Cross-platform support
--   Automated CLI installation
--   Machine/profile separation
--   Secret-safe configuration
--   Reproducible workstation setup
+- Centralized ZSH configuration
+- Cross-platform support
+- Automated CLI installation
+- Machine/profile separation
+- Machine-local configuration
+- Secret-safe configuration
+- Reproducible workstation setup
 
 ## Supported Machines
 
-  Machine        Profile    Role
-  -------------- ---------- -----------
-  Personal Mac   personal   mac
-  Work Mac       work       work-mac
-  Raspberry Pi   personal   homelab
-  Steam Deck     personal   steamdeck
+| Machine | Profile | Role |
+|---|---|---|
+| Personal Mac | `personal` | `mac` |
+| Work Mac | `work` | `work-mac` |
+| Raspberry Pi | `personal` | `homelab` |
+| Steam Deck | `personal` | `steamdeck` |
 
 ## Structure
 
-``` text
+```text
 .
 ├── .chezmoi.toml.tmpl
 ├── .chezmoiscripts/
+├── AGENTS.md
+├── CLAUDE.md
+├── README.md
+├── dot_local/
+│   └── bin/
+│       └── executable_local-env
 ├── dot_zshrc.tmpl
 └── private_dot_config/
     └── zsh/
@@ -45,123 +50,196 @@ machine-specific configuration profiles.
         ├── personal.zsh
         ├── work.zsh
         └── hosts/
+            ├── mac.zsh
+            ├── work-mac.zsh
+            ├── homelab.zsh
+            └── steamdeck.zsh
 ```
+
+## Configuration Model
+
+Configuration is split into layers.
+
+```text
+.zshrc
+├── common.zsh
+├── profile
+│   ├── personal.zsh
+│   └── work.zsh
+└── host
+    ├── mac.zsh
+    ├── work-mac.zsh
+    ├── homelab.zsh
+    └── steamdeck.zsh
+```
+
+Shared behavior belongs in `common.zsh`.
+
+Profile-specific behavior belongs in:
+
+```text
+personal.zsh
+work.zsh
+```
+
+Machine-specific behavior belongs in the corresponding file under:
+
+```text
+~/.config/zsh/hosts/
+```
+
+Machine-local configuration that must not be synchronized is kept outside chezmoi.
 
 ## Tooling
 
 ### Shell
 
--   zsh-autosuggestions
--   zsh-syntax-highlighting
--   zsh-history-substring-search
+- zsh-autosuggestions
+- zsh-syntax-highlighting
+- zsh-history-substring-search
 
 ### Navigation
 
--   zoxide
--   fzf
+- zoxide
+- fzf
 
 ### Search
 
--   ripgrep
--   fd
+- ripgrep
+- fd
 
 Aliases:
 
-``` text
-ff -> fd/fdfind
-rgrep -> ripgrep
+```text
+ff     -> fd / fdfind
+rgrep  -> ripgrep
 ```
+
+POSIX commands such as `find` and `grep` are intentionally not replaced because shell tools and development SDKs may depend on their standard behavior.
 
 ### File Viewing
 
--   bat
--   eza
+- bat
+- eza
 
 Aliases:
 
-``` text
-cat -> bat/batcat
-ll -> eza -lah
-tree -> eza --tree
+```text
+cat   -> bat / batcat
+ll    -> eza -lah
+tree  -> eza --tree
 ```
 
 ### Git
 
-Powered by git-delta:
+Git output is enhanced with `git-delta`.
 
--   delta pager
--   side-by-side diff
--   navigation
+Features include:
+
+- delta pager
+- side-by-side diffs
+- diff navigation
 
 ### Development
 
--   direnv
--   SDKMAN
--   NVM
--   Java helpers
+Depending on the machine:
+
+- direnv
+- SDKMAN
+- NVM
+- Java helpers
+- Claude Code helpers
 
 ## Installation
 
-Install chezmoi:
+Install chezmoi.
 
-``` bash
+On macOS:
+
+```bash
 brew install chezmoi
 ```
 
-Initialize:
+Initialize the repository:
 
-``` bash
+```bash
 chezmoi init <repository>
 chezmoi apply
 ```
 
-Review:
+Review changes:
 
-``` bash
+```bash
 chezmoi diff
 chezmoi status
 ```
 
-## Platform Notes
+## CLI Bootstrap
 
-Debian compatibility:
+CLI tools are installed through chezmoi scripts.
 
-  Tool   Debian name
-  ------ -------------
-  fd     fdfind
-  bat    batcat
+Currently managed tools include:
 
-Steam Deck:
+- fzf
+- zoxide
+- ripgrep
+- fd
+- bat
+- eza
+- direnv
+- delta
 
-``` bash
+Package names are adapted when necessary for each platform.
+
+### Debian
+
+Some Debian packages use different executable names:
+
+| Tool | Debian executable |
+|---|---|
+| `fd` | `fdfind` |
+| `bat` | `batcat` |
+
+The shell configuration handles these differences automatically.
+
+### Steam Deck
+
+SteamOS uses a read-only filesystem by default.
+
+Package installation may require manually disabling read-only mode:
+
+```bash
 sudo steamos-readonly disable
 ```
 
-## Secrets
+This is intentionally not automated by the dotfiles.
 
-This repository contains no secrets.
+## Machine-local Configuration
 
-Never commit:
+Some configuration belongs to a specific machine and should never be managed by chezmoi or committed to Git.
 
--   API tokens
--   passwords
--   private keys
--   credential files
--   secret .env files
+The shared `common.zsh` supports two machine-local mechanisms:
 
-## Machine-local configuration
-
-Some environment variables or machine-specific values should exist only on a single machine and must not be managed by chezmoi.
-
-For the Work Mac, `hosts/work-mac.zsh` loads an optional local file:
-
-```zsh
-if [[ -f "$HOME/.config/zsh/local.zsh" ]]; then
-    source "$HOME/.config/zsh/local.zsh"
-fi
+```text
+common.zsh
+├── local-env
+│   └── machine-local environment variables
+└── ~/.config/zsh/local.zsh
+    └── other machine-local shell configuration
 ```
 
-Create it directly on the machine:
+Use `local-env` for environment variables.
+
+Use `~/.config/zsh/local.zsh` only as a generic escape hatch for local shell behavior that does not belong in the managed configuration.
+
+Examples include:
+
+- local aliases
+- temporary shell initialization
+- machine-specific functions
+- dynamic integrations that should remain local
+
+Create it with:
 
 ```bash
 mkdir -p ~/.config/zsh
@@ -169,60 +247,219 @@ touch ~/.config/zsh/local.zsh
 chmod 600 ~/.config/zsh/local.zsh
 ```
 
-Use this file for local-only environment variables and sensitive configuration:
+The file is loaded automatically by `common.zsh` when present.
 
-```zsh
-export SOME_LOCAL_VARIABLE="value"
+> [!IMPORTANT]
+> `~/.config/zsh/local.zsh` is intentionally not managed by chezmoi and must never be committed to this repository.
+
+## local-env
+
+The repository includes a `local-env` utility for managing machine-local environment variables.
+
+It is versioned in:
+
+```text
+dot_local/bin/executable_local-env
 ```
 
-For credentials that can be retrieved dynamically, prefer using the system credential store or CLI authentication instead of storing the secret value directly.
+and installed by chezmoi as:
+
+```text
+~/.local/bin/local-env
+```
+
+Only the tool is versioned. The values it manages remain local to each machine.
+
+### Storage
+
+`local-env` uses:
+
+```text
+~/.config/local-env/
+├── env
+└── names
+```
+
+`env` contains the currently configured environment variables.
 
 Example:
 
-```zsh
-if command -v gh >/dev/null 2>&1; then
-    export GITHUB_TOKEN="$(gh auth token 2>/dev/null)"
-fi
+```bash
+# Managed by local-env.
+# Machine-local values. Do not commit this file.
+
+export API_URL=https://example.com
+export PROJECT_NAME='My Project'
 ```
 
-`~/.config/zsh/local.zsh` is intentionally **not managed by chezmoi and must never be committed to this repository**.
+`names` is an internal registry of environment variable names that have been managed by `local-env`.
 
-The configuration model is:
+For example:
 
 ```text
-chezmoi-managed config
-        |
-        └── hosts/work-mac.zsh
-                 |
-                 └── ~/.config/zsh/local.zsh
-                        └── local-only values
+API_URL
+PROJECT_NAME
 ```
 
-This keeps the repository reproducible while allowing each machine to have private runtime configuration.
+The registry is necessary because environment variables are inherited by child processes.
+
+When a new shell starts, `common.zsh`:
+
+1. reads `names`;
+2. clears those variables from the inherited environment;
+3. loads the current values from `env`;
+4. loads `local.zsh` afterwards.
+
+This means removing a variable with `local-env unset` also removes it correctly from subsequent shells without storing `unset VARIABLE` entries inside `env`.
+
+Both files are machine-local runtime state and must never be added to chezmoi or committed.
+
+### Commands
+
+Set a value:
+
+```bash
+local-env set API_URL https://example.com
+```
+
+Set a value containing spaces:
+
+```bash
+local-env set PROJECT_NAME "My Project"
+```
+
+Read a value:
+
+```bash
+local-env get API_URL
+```
+
+List configured variable names:
+
+```bash
+local-env list
+```
+
+Remove a variable:
+
+```bash
+local-env unset API_URL
+```
+
+Show the storage path:
+
+```bash
+local-env path
+```
+
+Edit the environment file directly:
+
+```bash
+local-env edit
+```
+
+Show help:
+
+```bash
+local-env --help
+```
+
+### Machine isolation
+
+Each machine has independent runtime state:
+
+```text
+dotfiles repository
+└── local-env
+        |
+        ├── Personal Mac
+        │   └── ~/.config/local-env/
+        │       ├── env
+        │       └── names
+        |
+        ├── Work Mac
+        │   └── ~/.config/local-env/
+        │       ├── env
+        │       └── names
+        |
+        ├── Homelab
+        │   └── ~/.config/local-env/
+        │       ├── env
+        │       └── names
+        |
+        └── Steam Deck
+            └── ~/.config/local-env/
+                ├── env
+                └── names
+```
+
+The dotfiles synchronize the mechanism, not the machine-local values.
+
+## Secrets
+
+This repository must contain no secrets.
+
+Never commit:
+
+- API tokens
+- passwords
+- credentials
+- private keys
+- secret environment files
+- authentication material
+
+Machine-local values should remain outside chezmoi.
+
+When possible, credentials should be retrieved from local credential stores or authenticated CLI tools instead of being written directly into files.
 
 ## Git Workflow
 
-Commits use Conventional Commits:
+Commits use Conventional Commits.
 
-``` text
+Format:
+
+```text
 type(scope): description
 ```
 
 Examples:
 
-``` text
-feat(zsh): add helper
-fix(chezmoi): improve bootstrap
-docs(readme): update documentation
+```text
+feat(zsh): add machine-local environment manager
+fix(zsh): clear inherited local environment variables
+docs(readme): document local environment management
+refactor(zsh): simplify local configuration
 chore(repo): update metadata
 ```
 
+Allowed types:
+
+- `feat`
+- `fix`
+- `docs`
+- `refactor`
+- `chore`
+- `test`
+- `build`
+- `ci`
+
+Before committing:
+
+```bash
+git diff
+git status
+chezmoi diff
+```
+
+Keep commits small and focused.
+
 ## Roadmap
 
--   Improve bootstrap validation
--   Add automated checks
--   Expand workstation automation
--   Document recovery procedures
+- Add secret-provider support
+- Improve bootstrap validation
+- Add automated checks
+- Expand workstation automation
+- Document recovery procedures
 
 ## License
 

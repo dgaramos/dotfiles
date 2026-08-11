@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+CONFIG_DIR = Path.home() / ".config" / "local-env"
+ENV_FILE = CONFIG_DIR / "env"
+NAMES_FILE = CONFIG_DIR / "names"
+
+NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def ensure_storage():
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.chmod(0o700)
+
+    for path in (ENV_FILE, NAMES_FILE):
+        if not path.exists():
+            path.touch()
+        path.chmod(0o600)
+
+
+def validate_name(name):
+    if not NAME_RE.fullmatch(name):
+        raise SystemExit(f"Invalid environment variable name: {name}")
+
+
+def read_names():
+    ensure_storage()
+
+    names = set()
+
+    for line in NAMES_FILE.read_text().splitlines():
+        name = line.strip()
+
+        if name and NAME_RE.fullmatch(name):
+            names.add(name)
+
+    return names
+
+
+def write_names(names):
+    ensure_storage()
+
+    content = "".join(f"{name}\n" for name in sorted(names))
+    NAMES_FILE.write_text(content)
+    NAMES_FILE.chmod(0o600)
+
+
+def read_vars():
+    ensure_storage()
+
+    values = {}
+
+    for raw_line in ENV_FILE.read_text().splitlines():
+        line = raw_line.strip()
+
+        if not line or line.startswith("#"):
+            continue
+
+        if line.startswith("export "):
+            line = line[len("export "):]
+
+        if "=" not in line:
+            continue
+
+        name, value = line.split("=", 1)
+        name = name.strip()
+
+        if not NAME_RE.fullmatch(name):
+            continue
+
+        try:
+            parsed = shlex.split(value, posix=True)
+            values[name] = parsed[0] if parsed else ""
+        except ValueError:
+            values[name] = value
+
+    return values
+
+
+def write_vars(values):
+    ensure_storage()
+
+    lines = [
+        "# Managed by local-env.",
+        "# Machine-local values. Do not commit this file.",
+        "",
+    ]
+
+    for name in sorted(values):
+        lines.append(f"export {name}={shlex.quote(values[name])}")
+
+    ENV_FILE.write_text("\n".join(lines) + "\n")
+    ENV_FILE.chmod(0o600)
+
+
+def cmd_set(args):
+    if len(args) < 2:
+        raise SystemExit("Usage: local-env set NAME VALUE")
+
+    name = args[0]
+    value = " ".join(args[1:])
+
+    validate_name(name)
+
+    values = read_vars()
+    names = read_names()
+
+    values[name] = value
+    names.add(name)
+
+    write_vars(values)
+    write_names(names)
+
+    print(f"Set {name}")
+    print("Open a new shell or run: exec zsh")
+
+
+def cmd_unset(args):
+    if len(args) != 1:
+        raise SystemExit("Usage: local-env unset NAME")
+
+    name = args[0]
+    validate_name(name)
+
+    values = read_vars()
+    names = read_names()
+
+    # Keep the name registered so a new shell can clear an inherited value.
+    names.add(name)
+
+    if name not in values:
+        write_names(names)
+        print(f"{name} is not set")
+        return
+
+    del values[name]
+
+    write_vars(values)
+    write_names(names)
+
+    print(f"Removed {name}")
+    print("Open a new shell or run: exec zsh")
+
+
+def cmd_get(args):
+    if len(args) != 1:
+        raise SystemExit("Usage: local-env get NAME")
+
+    name = args[0]
+    validate_name(name)
+
+    values = read_vars()
+
+    if name not in values:
+        raise SystemExit(f"{name} is not set")
+
+    print(values[name])
+
+
+def cmd_list(args):
+    if args:
+        raise SystemExit("Usage: local-env list")
+
+    values = read_vars()
+
+    if not values:
+        print("No local environment variables configured.")
+        return
+
+    for name in sorted(values):
+        print(name)
+
+
+def cmd_path(args):
+    if args:
+        raise SystemExit("Usage: local-env path")
+
+    ensure_storage()
+    print(ENV_FILE)
+
+
+def cmd_edit(args):
+    if args:
+        raise SystemExit("Usage: local-env edit")
+
+    ensure_storage()
+
+    editor = os.environ.get("EDITOR", "vi")
+    subprocess.run([editor, str(ENV_FILE)], check=True)
+
+    # Preserve previously managed names and register any new variables
+    # introduced manually through the editor.
+    names = read_names()
+    names.update(read_vars().keys())
+    write_names(names)
+
+
+def cmd_help():
+    print(
+        """Usage:
+  local-env set NAME VALUE
+  local-env unset NAME
+  local-env get NAME
+  local-env list
+  local-env path
+  local-env edit
+
+Storage:
+  ~/.config/local-env/env
+  ~/.config/local-env/names
+
+The environment files are machine-local and are not managed by chezmoi.
+"""
+    )
+
+
+def main():
+    if len(sys.argv) < 2:
+        cmd_help()
+        return
+
+    command = sys.argv[1]
+    args = sys.argv[2:]
+
+    commands = {
+        "set": cmd_set,
+        "unset": cmd_unset,
+        "get": cmd_get,
+        "list": cmd_list,
+        "path": cmd_path,
+        "edit": cmd_edit,
+    }
+
+    if command in {"help", "-h", "--help"}:
+        cmd_help()
+        return
+
+    handler = commands.get(command)
+
+    if handler is None:
+        raise SystemExit(f"Unknown command: {command}")
+
+    handler(args)
+
+
+if __name__ == "__main__":
+    main()
