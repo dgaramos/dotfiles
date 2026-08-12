@@ -5,8 +5,15 @@ $directory\
 $git_branch\
 $git_status\
 $cmd_duration\
+$time\
 $line_break\
 $character"""
+
+[time]
+disabled = false
+format = "[$time]($style) "
+style = "dimmed white"
+time_format = "%H:%M:%S"
 
 [username]
 show_always = true
