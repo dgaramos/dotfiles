@@ -63,19 +63,19 @@ elif command -v apt >/dev/null 2>&1; then
 elif command -v dnf >/dev/null 2>&1; then
     mkdir -p ~/.local/bin
     install_github_release fzf \
-        "https://github.com/junegunn/fzf/releases/latest/download/fzf-linux_arm64.tar.gz"
+        "https://github.com/junegunn/fzf/releases/download/v0.74.2/fzf-0.74.2-linux_arm64.tar.gz"
     install_github_release zoxide \
-        "https://github.com/ajeetdsouza/zoxide/releases/latest/download/zoxide-aarch64-unknown-linux-musl.tar.gz"
+        "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.7/zoxide-0.9.7-aarch64-unknown-linux-musl.tar.gz"
     install_github_release rg \
-        "https://github.com/BurntSushi/ripgrep/releases/latest/download/ripgrep-aarch64-unknown-linux-musl.tar.gz" rg
+        "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-unknown-linux-musl.tar.gz" rg
     install_github_release fd \
-        "https://github.com/sharkdp/fd/releases/latest/download/fd-aarch64-unknown-linux-musl.tar.gz" fd
+        "https://github.com/sharkdp/fd/releases/download/v10.4.0/fd-v10.4.0-aarch64-unknown-linux-musl.tar.gz" fd
     install_github_release bat \
-        "https://github.com/sharkdp/bat/releases/latest/download/bat-aarch64-unknown-linux-musl.tar.gz" bat
+        "https://github.com/sharkdp/bat/releases/download/v0.25.0/bat-v0.25.0-aarch64-unknown-linux-musl.tar.gz" bat
     install_github_release delta \
-        "https://github.com/dandavison/delta/releases/latest/download/delta-aarch64-unknown-linux-gnu.tar.gz" delta
+        "https://github.com/dandavison/delta/releases/download/0.18.2/delta-0.18.2-aarch64-unknown-linux-gnu.tar.gz" delta
     install_github_release eza \
-        "https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-unknown-linux-musl.tar.gz" eza
+        "https://github.com/eza-community/eza/releases/download/v0.20.20/eza_aarch64-unknown-linux-musl.tar.gz" eza
     if ! command -v direnv >/dev/null 2>&1; then
         curl -sfL https://direnv.net/install.sh | bash || true
     fi
