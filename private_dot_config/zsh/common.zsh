@@ -124,6 +124,11 @@ if command -v fzf >/dev/null 2>&1; then
     fi
 fi
 
+# Print timestamp when a command starts executing
+preexec() {
+    echo "\033[2m▶ $(date '+%H:%M:%S')\033[0m"
+}
+
 # History substring search
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
