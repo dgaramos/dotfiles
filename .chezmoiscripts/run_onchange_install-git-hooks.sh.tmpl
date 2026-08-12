@@ -1,0 +1,27 @@
+#!/bin/sh
+# install-git-hooks.sh — installs pre-commit hook into the chezmoi source repo
+
+set -eu
+
+CHEZMOI_SOURCE="{{ .chezmoi.sourceDir }}"
+HOOKS_DIR="$CHEZMOI_SOURCE/.git/hooks"
+HOOK="$HOOKS_DIR/pre-commit"
+
+if [ ! -d "$HOOKS_DIR" ]; then
+    echo "chezmoi source .git/hooks not found, skipping hook install"
+    exit 0
+fi
+
+cat > "$HOOK" << 'HOOK_SCRIPT'
+#!/bin/sh
+# pre-commit: scan staged files for secrets and private references
+
+if command -v check-dotfiles >/dev/null 2>&1; then
+    check-dotfiles --staged
+else
+    echo "check-dotfiles not found in PATH, skipping secret scan"
+fi
+HOOK_SCRIPT
+
+chmod +x "$HOOK"
+echo "pre-commit hook installed at $HOOK"

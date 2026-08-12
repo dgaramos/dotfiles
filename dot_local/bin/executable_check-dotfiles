@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""
+Scan dotfiles source for secrets, IPs, and private hostnames.
+
+Usage:
+  check-dotfiles [files...]   scan specific files
+  check-dotfiles --staged     scan git-staged files (used by pre-commit hook)
+  check-dotfiles --all        scan all tracked files
+"""
+
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Patterns that BLOCK the commit (high confidence)
+# ---------------------------------------------------------------------------
+BLOCK_PATTERNS = [
+    (
+        "private-key",
+        re.compile(r"-----BEGIN (RSA|EC|DSA|OPENSSH|PGP) PRIVATE KEY"),
+        "Private key material",
+    ),
+    (
+        "aws-access-key",
+        re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+        "AWS access key ID",
+    ),
+    (
+        "aws-secret-key",
+        re.compile(r"\baws.{0,20}secret.{0,20}['\"][0-9a-zA-Z/+]{40}['\"]", re.IGNORECASE),
+        "AWS secret access key",
+    ),
+    (
+        "github-token",
+        re.compile(r"\bgh[pousr]_[0-9a-zA-Z]{36}\b"),
+        "GitHub personal access token",
+    ),
+    (
+        "generic-token",
+        re.compile(
+            r'(?i)(password|passwd|secret|api.?key|auth.?token)\s*[=:]\s*["\']?[^\s"\'<>{}\[\]]{8,}["\']?'
+        ),
+        "Secret assignment",
+    ),
+    (
+        "ec2-hostname",
+        re.compile(r"\bec2-\d+-\d+-\d+-\d+\.compute\.amazonaws\.com\b"),
+        "EC2 public DNS hostname",
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Patterns that WARN (may be intentional in documentation/comments)
+# ---------------------------------------------------------------------------
+WARN_PATTERNS = [
+    (
+        "ipv4-address",
+        re.compile(
+            r"\b(?!127\.0\.0\.1\b)"           # not loopback
+            r"(?!0\.0\.0\.0\b)"               # not unspecified
+            r"(?!255\.255\.255\.255\b)"        # not broadcast
+            r"(?!192\.0\.2\.\d+\b)"           # not TEST-NET-1
+            r"(?!198\.51\.100\.\d+\b)"        # not TEST-NET-2
+            r"(?!203\.0\.113\.\d+\b)"         # not TEST-NET-3
+            r"(?!10\.0\.0\.1\b)"              # not common gateway example
+            r"(\d{1,3}\.){3}\d{1,3}\b"
+        ),
+        "IPv4 address (verify this is not a private server IP)",
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# File extensions to skip entirely
+# ---------------------------------------------------------------------------
+SKIP_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".woff", ".ttf"}
+
+# Lines containing these strings are ignored (explicit allowlist)
+ALLOWLIST_MARKERS = ["check-dotfiles: ignore", "notsecret", "example.com", "localhost"]
+
+
+def get_staged_files():
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+        capture_output=True,
+        text=True,
+    )
+    return [Path(p) for p in result.stdout.splitlines() if p]
+
+
+def get_all_tracked_files():
+    result = subprocess.run(
+        ["git", "ls-files"],
+        capture_output=True,
+        text=True,
+    )
+    return [Path(p) for p in result.stdout.splitlines() if p]
+
+
+def should_skip(path: Path) -> bool:
+    if path.suffix.lower() in SKIP_EXTENSIONS:
+        return True
+    # Skip binary-like files
+    try:
+        path.read_bytes()[:512].decode("utf-8")
+    except (UnicodeDecodeError, FileNotFoundError):
+        return True
+    return False
+
+
+def line_is_allowed(line: str) -> bool:
+    lower = line.lower()
+    return any(marker in lower for marker in ALLOWLIST_MARKERS)
+
+
+def scan_file(path: Path):
+    if should_skip(path):
+        return [], []
+
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return [], []
+
+    blocks = []
+    warns = []
+
+    for lineno, line in enumerate(content.splitlines(), 1):
+        if line_is_allowed(line):
+            continue
+
+        for name, pattern, description in BLOCK_PATTERNS:
+            if pattern.search(line):
+                blocks.append((lineno, name, description, line.strip()))
+
+        for name, pattern, description in WARN_PATTERNS:
+            if pattern.search(line):
+                warns.append((lineno, name, description, line.strip()))
+
+    return blocks, warns
+
+
+def main():
+    args = sys.argv[1:]
+
+    if "--staged" in args:
+        files = get_staged_files()
+        mode = "staged"
+    elif "--all" in args:
+        files = get_all_tracked_files()
+        mode = "all"
+    elif args:
+        files = [Path(f) for f in args if not f.startswith("--")]
+        mode = "explicit"
+    else:
+        print(__doc__)
+        sys.exit(0)
+
+    all_blocks = []
+    all_warns = []
+
+    for path in files:
+        blocks, warns = scan_file(path)
+        for lineno, name, description, snippet in blocks:
+            all_blocks.append((path, lineno, name, description, snippet))
+        for lineno, name, description, snippet in warns:
+            all_warns.append((path, lineno, name, description, snippet))
+
+    if all_warns:
+        print("\033[33m⚠  WARNINGS\033[0m")
+        for path, lineno, name, description, snippet in all_warns:
+            print(f"  {path}:{lineno} [{name}] {description}")
+            print(f"    {snippet[:120]}")
+        print()
+
+    if all_blocks:
+        print("\033[31m✗  BLOCKED — commit contains sensitive content\033[0m")
+        for path, lineno, name, description, snippet in all_blocks:
+            print(f"  {path}:{lineno} [{name}] {description}")
+            print(f"    {snippet[:120]}")
+        print()
+        print("Fix the issues above before committing.")
+        print("If a match is a false positive, add  # check-dotfiles: ignore  to that line.")
+        sys.exit(1)
+
+    if all_warns and mode == "staged":
+        print("Warnings found. Review before pushing.")
+        print("Add  # check-dotfiles: ignore  to suppress false positives.")
+
+    if not all_blocks and not all_warns:
+        print("\033[32m✓  No secrets or private references detected\033[0m")
+
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
