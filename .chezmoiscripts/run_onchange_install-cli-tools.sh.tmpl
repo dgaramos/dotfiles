@@ -20,15 +20,6 @@ install_pacman() {
     fi
 }
 
-install_dnf() {
-    if command -v dnf >/dev/null 2>&1; then
-        for pkg in "$@"; do
-            sudo dnf install -y "$pkg" || true
-        done
-    fi
-}
-
-
 install_starship() {
     if ! command -v starship >/dev/null 2>&1; then
         curl -sS https://starship.rs/install.sh | sh -s -- --yes
@@ -41,15 +32,69 @@ install_gh() {
     fi
 }
 
+# Install a tool from a GitHub release tarball (aarch64 Linux).
+# Usage: install_from_github CMD REPO ASSET_TEMPLATE [BINARY]
+#   ASSET_TEMPLATE: filename with VER (no v) or TAG (with v) as placeholders
+#   BINARY: binary name inside the archive if different from CMD
+install_from_github() {
+    local cmd="$1" repo="$2" asset_tmpl="$3" binary="${4:-$1}"
+    command -v "$cmd" >/dev/null 2>&1 && return 0
+
+    local tag ver filename url
+    tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" \
+        | grep '"tag_name"' | head -1 \
+        | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+    [ -z "$tag" ] && { echo "Could not resolve $cmd version"; return 1; }
+    ver="${tag#v}"
+
+    filename=$(printf '%s' "$asset_tmpl" | sed "s/VER/$ver/g; s/TAG/$tag/g")
+    url="https://github.com/$repo/releases/download/$tag/$filename"
+
+    mkdir -p /tmp/_ghr && rm -rf /tmp/_ghr/*
+    curl -fLo /tmp/_ghr/pkg "$url" || { echo "Download failed: $url"; return 1; }
+    tar -xzf /tmp/_ghr/pkg -C /tmp/_ghr 2>/dev/null || true
+    find /tmp/_ghr -type f -name "$binary" | head -1 | xargs -I{} mv {} ~/.local/bin/"$cmd"
+    chmod +x ~/.local/bin/"$cmd"
+    rm -rf /tmp/_ghr
+    echo "Installed $cmd ($tag)"
+}
+
+# Install direnv — single binary release, not a tarball
+install_direnv() {
+    command -v direnv >/dev/null 2>&1 && return 0
+    local tag
+    tag=$(curl -fsSL "https://api.github.com/repos/direnv/direnv/releases/latest" \
+        | grep '"tag_name"' | head -1 \
+        | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+    [ -z "$tag" ] && { echo "Could not resolve direnv version"; return 1; }
+    curl -fLo ~/.local/bin/direnv \
+        "https://github.com/direnv/direnv/releases/download/$tag/direnv.linux-arm64"
+    chmod +x ~/.local/bin/direnv
+    echo "Installed direnv ($tag)"
+}
+
 if command -v brew >/dev/null 2>&1; then
     install_brew fzf zoxide ripgrep fd bat eza direnv delta starship gh
+
 elif command -v apt >/dev/null 2>&1; then
     install_apt fzf ripgrep fd-find bat direnv delta
     install_apt zoxide
     install_apt eza
     install_starship
+
 elif command -v dnf >/dev/null 2>&1; then
+    mkdir -p ~/.local/bin
+    # VER = version without v prefix, TAG = full tag (e.g. v1.2.3)
+    install_from_github fzf    junegunn/fzf         'fzf-VER-linux_arm64.tar.gz'
+    install_from_github zoxide ajeetdsouza/zoxide   'zoxide-VER-aarch64-unknown-linux-musl.tar.gz'
+    install_from_github rg     BurntSushi/ripgrep   'ripgrep-VER-aarch64-unknown-linux-musl.tar.gz'  rg
+    install_from_github fd     sharkdp/fd           'fd-TAG-aarch64-unknown-linux-musl.tar.gz'       fd
+    install_from_github bat    sharkdp/bat          'bat-TAG-aarch64-unknown-linux-musl.tar.gz'      bat
+    install_from_github delta  dandavison/delta     'delta-VER-aarch64-unknown-linux-gnu.tar.gz'     delta
+    install_from_github eza    eza-community/eza   'eza_aarch64-unknown-linux-musl.tar.gz'           eza
+    install_direnv
     install_starship
+
 elif command -v pacman >/dev/null 2>&1; then
     install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship
 fi
