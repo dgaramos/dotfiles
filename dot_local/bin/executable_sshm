@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+SSH_DIR = Path.home() / ".ssh"
+SSH_CONFIG = SSH_DIR / "config"
+
+
+# ---------------------------------------------------------------------------
+# SSH config parser
+# ---------------------------------------------------------------------------
+
+def parse_config():
+    """Parse ~/.ssh/config and return a list of host blocks.
+
+    Each block is a dict with 'host' and 'options' (list of (key, value) tuples).
+    Comment-only blocks and the global block are preserved as raw lines.
+    """
+    if not SSH_CONFIG.exists():
+        return []
+
+    blocks = []
+    current = None
+
+    for line in SSH_CONFIG.read_text().splitlines():
+        stripped = line.strip()
+
+        if stripped.lower().startswith("host ") and not stripped.lower().startswith("hostname"):
+            if current is not None:
+                blocks.append(current)
+            alias = stripped.split(None, 1)[1]
+            current = {"host": alias, "options": [], "raw": [line]}
+        elif current is not None:
+            current["raw"].append(line)
+            if stripped and not stripped.startswith("#"):
+                if " " in stripped:
+                    key, value = stripped.split(None, 1)
+                    current["options"].append((key, value))
+        else:
+            blocks.append({"host": None, "raw": [line]})
+
+    if current is not None:
+        blocks.append(current)
+
+    return blocks
+
+
+def write_config(blocks):
+    SSH_DIR.mkdir(mode=0o700, exist_ok=True)
+    lines = []
+    for block in blocks:
+        lines.extend(block["raw"])
+    SSH_CONFIG.write_text("\n".join(lines) + "\n")
+    SSH_CONFIG.chmod(0o600)
+
+
+def find_host(blocks, alias):
+    for block in blocks:
+        if block.get("host") == alias:
+            return block
+    return None
+
+
+def get_option(block, key):
+    for k, v in block.get("options", []):
+        if k.lower() == key.lower():
+            return v
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Key helpers
+# ---------------------------------------------------------------------------
+
+def list_keys():
+    """Return available keys in ~/.ssh/ — .pub files and .pem files."""
+    keys = []
+    if SSH_DIR.exists():
+        for f in sorted(SSH_DIR.iterdir()):
+            if f.suffix in (".pem",) or (f.suffix == "" and (SSH_DIR / (f.name + ".pub")).exists()):
+                keys.append(f)
+            elif f.suffix == ".pub":
+                pass  # listed via private key
+    return keys
+
+
+def install_pem(pem_path):
+    """Copy a .pem to ~/.ssh/ with correct permissions. Returns destination path."""
+    src = Path(pem_path).expanduser()
+    if not src.exists():
+        raise SystemExit(f"File not found: {src}")
+    dst = SSH_DIR / src.name
+    if dst != src:
+        shutil.copy2(src, dst)
+    dst.chmod(0o400)
+    return dst
+
+
+def derive_pubkey(pem_path):
+    """Derive public key string from a .pem file."""
+    result = subprocess.run(
+        ["ssh-keygen", "-y", "-f", str(pem_path)],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise SystemExit(f"Failed to derive public key: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+
+def cmd_list(args):
+    blocks = parse_config()
+    hosts = [b for b in blocks if b.get("host")]
+
+    if not hosts:
+        print("No hosts configured in ~/.ssh/config")
+        return
+
+    col1 = max(len(b["host"]) for b in hosts)
+    col2 = max((len(get_option(b, "HostName") or "") for b in hosts), default=0)
+
+    print(f"{'HOST':<{col1}}  {'HOSTNAME':<{col2}}  USER")
+    print("-" * (col1 + col2 + 20))
+    for b in hosts:
+        host = b["host"]
+        hostname = get_option(b, "HostName") or ""
+        user = get_option(b, "User") or ""
+        print(f"{host:<{col1}}  {hostname:<{col2}}  {user}")
+
+
+def cmd_edit(args):
+    editor = os.environ.get("EDITOR", "nano")
+    subprocess.run([editor, str(SSH_CONFIG)])
+
+
+def cmd_add(args):
+    print("=== sshm add ===\n")
+
+    alias = input("Nome do host (alias): ").strip()
+    if not alias:
+        raise SystemExit("Nome é obrigatório.")
+
+    blocks = parse_config()
+    if find_host(blocks, alias):
+        raise SystemExit(f"Host '{alias}' já existe em ~/.ssh/config")
+
+    hostname = input("Endereço (IP ou hostname): ").strip()
+    if not hostname:
+        raise SystemExit("Endereço é obrigatório.")
+
+    user = input("Usuário [ec2-user]: ").strip() or "ec2-user"
+    port = input("Porta [22]: ").strip() or "22"
+
+    print("\nChave SSH:")
+    print("  1) Usar chave existente em ~/.ssh/")
+    print("  2) Informar caminho de um .pem")
+    key_choice = input("> ").strip()
+
+    identity_file = None
+
+    if key_choice == "1":
+        available = sorted(SSH_DIR.glob("*.pem")) + sorted(
+            f for f in SSH_DIR.iterdir()
+            if f.suffix == "" and (SSH_DIR / (f.name + ".pub")).exists()
+        )
+        if not available:
+            raise SystemExit("Nenhuma chave encontrada em ~/.ssh/")
+        print("\nChaves disponíveis:")
+        for i, k in enumerate(available, 1):
+            print(f"  {i}) {k.name}")
+        idx = input("> ").strip()
+        try:
+            identity_file = available[int(idx) - 1]
+        except (ValueError, IndexError):
+            raise SystemExit("Seleção inválida.")
+
+    elif key_choice == "2":
+        pem_input = input("Caminho do .pem: ").strip()
+        identity_file = install_pem(pem_input)
+        print(f"Chave copiada para {identity_file} com permissão 400.")
+
+    else:
+        raise SystemExit("Opção inválida.")
+
+    block_lines = [
+        f"Host {alias}",
+        f"    HostName {hostname}",
+        f"    User {user}",
+    ]
+    if port != "22":
+        block_lines.append(f"    Port {port}")
+    if identity_file:
+        block_lines.append(f"    IdentityFile ~/.ssh/{identity_file.name}")
+        block_lines.append(f"    IdentitiesOnly yes")
+    block_lines.append("")
+
+    new_block = {
+        "host": alias,
+        "options": [
+            ("HostName", hostname),
+            ("User", user),
+        ],
+        "raw": block_lines,
+    }
+
+    blocks.append(new_block)
+    write_config(blocks)
+    print(f"\nHost '{alias}' adicionado com sucesso.")
+
+    copy = input("Deseja copiar a chave pública para o servidor agora? [s/N]: ").strip().lower()
+    if copy == "s":
+        cmd_copy_id([alias])
+
+
+def cmd_copy_id(args):
+    if not args:
+        raise SystemExit("Usage: sshm copy-id <host>")
+
+    alias = args[0]
+    blocks = parse_config()
+    block = find_host(blocks, alias)
+
+    if not block:
+        raise SystemExit(f"Host '{alias}' não encontrado em ~/.ssh/config")
+
+    identity = get_option(block, "IdentityFile")
+    if not identity:
+        raise SystemExit(f"Host '{alias}' não tem IdentityFile configurado.")
+
+    identity_path = Path(identity).expanduser()
+
+    if identity_path.suffix == ".pem":
+        print(f"Derivando chave pública de {identity_path.name}...")
+        pubkey = derive_pubkey(identity_path)
+        hostname = get_option(block, "HostName") or alias
+        user = get_option(block, "User") or "ec2-user"
+        port = get_option(block, "Port") or "22"
+        print(f"Copiando chave pública para {user}@{hostname}...")
+        cmd = [
+            "ssh", "-i", str(identity_path), "-p", port,
+            f"{user}@{hostname}",
+            f"mkdir -p ~/.ssh && echo {pubkey!r} >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+        ]
+        subprocess.run(cmd)
+    else:
+        print(f"Copiando chave pública para {alias}...")
+        subprocess.run(["ssh-copy-id", "-i", str(identity_path), alias])
+
+
+def cmd_keygen(args):
+    print("=== sshm keygen ===\n")
+
+    name = input("Nome do arquivo [id_ed25519]: ").strip() or "id_ed25519"
+    key_type = input("Tipo de chave [ed25519]: ").strip() or "ed25519"
+    comment = input("Comentário (ex: danilo@work-mac): ").strip()
+
+    key_path = SSH_DIR / name
+    if key_path.exists():
+        raise SystemExit(f"Chave {key_path} já existe.")
+
+    cmd = ["ssh-keygen", "-t", key_type, "-f", str(key_path)]
+    if comment:
+        cmd += ["-C", comment]
+
+    subprocess.run(cmd, check=True)
+    print(f"\nChave gerada em {key_path}")
+    print(f"Chave pública: {key_path}.pub")
+
+
+def cmd_help():
+    print("""Usage:
+  sshm list                  Lista hosts configurados
+  sshm edit                  Abre ~/.ssh/config no editor
+  sshm add                   Wizard para adicionar novo host
+  sshm copy-id <host>        Copia chave pública para o servidor
+  sshm keygen                Wizard para gerar novo par de chaves
+""")
+
+
+def main():
+    if len(sys.argv) < 2:
+        cmd_help()
+        return
+
+    command = sys.argv[1]
+    args = sys.argv[2:]
+
+    commands = {
+        "list": cmd_list,
+        "edit": cmd_edit,
+        "add": cmd_add,
+        "copy-id": cmd_copy_id,
+        "keygen": cmd_keygen,
+    }
+
+    if command in {"help", "-h", "--help"}:
+        cmd_help()
+        return
+
+    handler = commands.get(command)
+    if handler is None:
+        raise SystemExit(f"Unknown command: {command}\nRun 'sshm help' for usage.")
+
+    handler(args)
+
+
+if __name__ == "__main__":
+    main()
