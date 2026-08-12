@@ -30,9 +30,19 @@ install_dnf() {
 
 install_github_release() {
     local cmd="$1"
-    local url="$2"
-    local binary="${3:-$cmd}"
+    local repo="$2"
+    local asset_pattern="$3"
+    local binary="${4:-$cmd}"
     if ! command -v "$cmd" >/dev/null 2>&1; then
+        local tag
+        tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+        if [ -z "$tag" ]; then
+            echo "Failed to resolve latest version for $cmd, skipping"
+            return
+        fi
+        local ver="${tag#v}"
+        local url
+        url=$(eval echo "https://github.com/$repo/releases/download/$tag/$asset_pattern")
         curl -fLo /tmp/_install.tar.gz "$url" && \
             tar -xzf /tmp/_install.tar.gz -C /tmp && \
             find /tmp -maxdepth 2 -name "$binary" -type f | head -1 | xargs -I{} mv {} ~/.local/bin/"$cmd" && \
@@ -62,20 +72,13 @@ elif command -v apt >/dev/null 2>&1; then
     install_starship
 elif command -v dnf >/dev/null 2>&1; then
     mkdir -p ~/.local/bin
-    install_github_release fzf \
-        "https://github.com/junegunn/fzf/releases/download/v0.74.2/fzf-0.74.2-linux_arm64.tar.gz"
-    install_github_release zoxide \
-        "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.7/zoxide-0.9.7-aarch64-unknown-linux-musl.tar.gz"
-    install_github_release rg \
-        "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-unknown-linux-musl.tar.gz" rg
-    install_github_release fd \
-        "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-aarch64-unknown-linux-musl.tar.gz" fd
-    install_github_release bat \
-        "https://github.com/sharkdp/bat/releases/download/v0.25.0/bat-v0.25.0-aarch64-unknown-linux-musl.tar.gz" bat
-    install_github_release delta \
-        "https://github.com/dandavison/delta/releases/download/0.18.2/delta-0.18.2-aarch64-unknown-linux-gnu.tar.gz" delta
-    install_github_release eza \
-        "https://github.com/eza-community/eza/releases/download/v0.23.5/eza_aarch64-unknown-linux-musl.tar.gz" eza
+    install_github_release fzf      junegunn/fzf              'fzf-${ver}-linux_arm64.tar.gz'
+    install_github_release zoxide   ajeetdsouza/zoxide        'zoxide-${ver}-aarch64-unknown-linux-musl.tar.gz'
+    install_github_release rg       BurntSushi/ripgrep        'ripgrep-${ver}-aarch64-unknown-linux-musl.tar.gz'   rg
+    install_github_release fd       sharkdp/fd                'fd-${tag}-aarch64-unknown-linux-musl.tar.gz'        fd
+    install_github_release bat      sharkdp/bat               'bat-${tag}-aarch64-unknown-linux-musl.tar.gz'       bat
+    install_github_release delta    dandavison/delta          'delta-${ver}-aarch64-unknown-linux-gnu.tar.gz'      delta
+    install_github_release eza      eza-community/eza         'eza_aarch64-unknown-linux-musl.tar.gz'              eza
     if ! command -v direnv >/dev/null 2>&1; then
         curl -sfL https://direnv.net/install.sh | bash || true
     fi
