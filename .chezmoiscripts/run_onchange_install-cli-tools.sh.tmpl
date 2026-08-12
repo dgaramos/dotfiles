@@ -28,28 +28,6 @@ install_dnf() {
     fi
 }
 
-install_github_release() {
-    local cmd="$1"
-    local repo="$2"
-    local asset_pattern="$3"
-    local binary="${4:-$cmd}"
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        local tag
-        tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
-        if [ -z "$tag" ]; then
-            echo "Failed to resolve latest version for $cmd, skipping"
-            return
-        fi
-        local ver="${tag#v}"
-        local url
-        url=$(eval echo "https://github.com/$repo/releases/download/$tag/$asset_pattern")
-        curl -fLo /tmp/_install.tar.gz "$url" && \
-            tar -xzf /tmp/_install.tar.gz -C /tmp && \
-            find /tmp -maxdepth 2 -name "$binary" -type f | head -1 | xargs -I{} mv {} ~/.local/bin/"$cmd" && \
-            chmod +x ~/.local/bin/"$cmd" && \
-            rm -f /tmp/_install.tar.gz || true
-    fi
-}
 
 install_starship() {
     if ! command -v starship >/dev/null 2>&1; then
@@ -71,17 +49,6 @@ elif command -v apt >/dev/null 2>&1; then
     install_apt eza
     install_starship
 elif command -v dnf >/dev/null 2>&1; then
-    mkdir -p ~/.local/bin
-    install_github_release fzf      junegunn/fzf              'fzf-${ver}-linux_arm64.tar.gz'
-    install_github_release zoxide   ajeetdsouza/zoxide        'zoxide-${ver}-aarch64-unknown-linux-musl.tar.gz'
-    install_github_release rg       BurntSushi/ripgrep        'ripgrep-${ver}-aarch64-unknown-linux-musl.tar.gz'   rg
-    install_github_release fd       sharkdp/fd                'fd-${tag}-aarch64-unknown-linux-musl.tar.gz'        fd
-    install_github_release bat      sharkdp/bat               'bat-${tag}-aarch64-unknown-linux-musl.tar.gz'       bat
-    install_github_release delta    dandavison/delta          'delta-${ver}-aarch64-unknown-linux-gnu.tar.gz'      delta
-    install_github_release eza      eza-community/eza         'eza_aarch64-unknown-linux-musl.tar.gz'              eza
-    if ! command -v direnv >/dev/null 2>&1; then
-        curl -sfL https://direnv.net/install.sh | bash || true
-    fi
     install_starship
 elif command -v pacman >/dev/null 2>&1; then
     install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship
