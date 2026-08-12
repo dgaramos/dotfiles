@@ -2,6 +2,8 @@
 # Work Mac
 # ============================================================
 
+alias prv='gh pr view --web'
+
 export PATH="/opt/homebrew/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 

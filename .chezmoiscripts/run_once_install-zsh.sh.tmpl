@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+{{ if eq .chezmoi.os "linux" -}}
+# Install zsh if missing
+if ! command -v zsh >/dev/null 2>&1; then
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update
+        sudo apt install -y zsh
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y zsh
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --needed --noconfirm zsh
+    fi
+fi
+
+# Set zsh as default shell
+if command -v zsh >/dev/null 2>&1; then
+    ZSH_PATH="$(command -v zsh)"
+    if [ "$SHELL" != "$ZSH_PATH" ]; then
+        # Add to /etc/shells if not already listed
+        if ! grep -qxF "$ZSH_PATH" /etc/shells; then
+            echo "$ZSH_PATH" | sudo tee -a /etc/shells
+        fi
+        sudo chsh -s "$ZSH_PATH" "$(whoami)"
+    fi
+fi
+{{ else -}}
+# zsh is pre-installed on macOS
+: no-op
+{{ end -}}

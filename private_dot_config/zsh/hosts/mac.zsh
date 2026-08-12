@@ -10,6 +10,8 @@ if [[ -d "/Applications/IntelliJ IDEA CE.app/Contents/MacOS" ]]; then
     export PATH="/Applications/IntelliJ IDEA CE.app/Contents/MacOS:$PATH"
 fi
 
+alias prv='gh pr view --web'
+
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
 

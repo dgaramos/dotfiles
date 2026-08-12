@@ -155,6 +155,16 @@ Depending on the machine:
 
 ## Installation
 
+### Prerequisites
+
+The prompt uses [Starship](https://starship.rs) with icons that require a [Nerd Font](https://www.nerdfonts.com) installed in your terminal emulator. On macOS, install one with:
+
+```bash
+brew install --cask font-jetbrains-mono-nerd-font
+```
+
+Then set it as the font in your terminal preferences. On remote machines (EC2, homelab) the font must be installed on the **client** machine, not the server.
+
 ### macOS
 
 ```bash

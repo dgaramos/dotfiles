@@ -36,7 +36,7 @@ alias gco='git checkout'
 if command -v gh >/dev/null 2>&1; then
     alias prs='gh pr list'
     alias mypr='gh pr list --author=@me'
-    alias prv='gh pr view --web'
+    alias prv='gh pr view'
     alias issues='gh issue list'
 fi
 
