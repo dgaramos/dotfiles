@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+# Remove legacy .chezmoi.toml.tmpl if it coexists with the current .chezmoi.yaml.tmpl.
+# Both files existing causes chezmoi to abort with "multiple config file templates".
+LEGACY="{{ .chezmoi.sourceDir }}/.chezmoi.toml.tmpl"
+
+if [ -f "$LEGACY" ]; then
+    rm "$LEGACY"
+    echo "Removed legacy config template: $LEGACY"
+fi
