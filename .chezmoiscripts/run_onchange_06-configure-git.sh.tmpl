@@ -12,10 +12,25 @@ if ! command -v git >/dev/null 2>&1; then
     exit 0
 fi
 
-DELTA_CONFIG="$HOME/.config/delta/config"
+# Prompt for git identity if not set via local-env
+if [ -z "${GIT_NAME:-}" ]; then
+    printf "Git user name: "
+    read -r GIT_NAME
+    local-env set GIT_NAME "$GIT_NAME"
+fi
 
-# Include delta config if not already included
-if ! git config --global --get-all include.path | grep -qF "$DELTA_CONFIG"; then
+if [ -z "${GIT_EMAIL:-}" ]; then
+    printf "Git email: "
+    read -r GIT_EMAIL
+    local-env set GIT_EMAIL "$GIT_EMAIL"
+fi
+
+git config --global user.name "$GIT_NAME"
+git config --global user.email "$GIT_EMAIL"
+
+# Wire delta config via include
+DELTA_CONFIG="$HOME/.config/delta/config"
+if ! git config --global --get-all include.path 2>/dev/null | grep -qF "$DELTA_CONFIG"; then
     git config --global --add include.path "$DELTA_CONFIG"
 fi
 
