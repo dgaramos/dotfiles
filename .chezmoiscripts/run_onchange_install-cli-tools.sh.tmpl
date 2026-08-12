@@ -60,14 +60,18 @@ elif command -v dnf >/dev/null 2>&1; then
     install_dnf_webi rg
     install_dnf_webi fd
     install_dnf_webi bat
-    install_dnf_webi direnv
     install_dnf_webi delta
-    # eza is not on webi — install from GitHub release
+    # direnv — not on webi, install from official script
+    if ! command -v direnv >/dev/null 2>&1; then
+        curl -sfL https://direnv.net/install.sh | bash || true
+    fi
+    # eza — not on webi, install from GitHub release (aarch64)
     if ! command -v eza >/dev/null 2>&1; then
-        EZA_URL="https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-unknown-linux-musl.tar.gz"
-        curl -fLo /tmp/eza.tar.gz "$EZA_URL" && \
-            tar -xzf /tmp/eza.tar.gz -C ~/.local/bin eza && \
-            rm /tmp/eza.tar.gz || true
+        curl -fLo /tmp/eza.tar.gz \
+            "https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-unknown-linux-musl.tar.gz" && \
+            tar -xzf /tmp/eza.tar.gz -C /tmp && \
+            mv /tmp/eza ~/.local/bin/eza && \
+            rm -f /tmp/eza.tar.gz || true
     fi
     install_starship
 elif command -v pacman >/dev/null 2>&1; then
