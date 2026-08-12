@@ -127,13 +127,17 @@ def cmd_list(args):
     col1 = max(len(b["host"]) for b in hosts)
     col2 = max((len(get_option(b, "HostName") or "") for b in hosts), default=0)
 
-    print(f"{'HOST':<{col1}}  {'HOSTNAME':<{col2}}  USER")
-    print("-" * (col1 + col2 + 20))
+    col3 = max((len(get_option(b, "User") or "") for b in hosts), default=0)
+    col4 = max((len(get_option(b, "IdentityFile") or "") for b in hosts), default=0)
+
+    print(f"{'HOST':<{col1}}  {'HOSTNAME':<{col2}}  {'USER':<{col3}}  KEY")
+    print("-" * (col1 + col2 + col3 + col4 + 10))
     for b in hosts:
         host = b["host"]
         hostname = get_option(b, "HostName") or ""
         user = get_option(b, "User") or ""
-        print(f"{host:<{col1}}  {hostname:<{col2}}  {user}")
+        key = get_option(b, "IdentityFile") or ""
+        print(f"{host:<{col1}}  {hostname:<{col2}}  {user:<{col3}}  {key}")
 
 
 def cmd_edit(args):
