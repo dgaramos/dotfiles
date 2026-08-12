@@ -28,9 +28,16 @@ install_dnf() {
     fi
 }
 
-install_dnf_webi() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        curl -sS "https://webi.sh/$1" | sh || true
+install_github_release() {
+    local cmd="$1"
+    local url="$2"
+    local binary="${3:-$cmd}"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        curl -fLo /tmp/_install.tar.gz "$url" && \
+            tar -xzf /tmp/_install.tar.gz -C /tmp && \
+            find /tmp -maxdepth 2 -name "$binary" -type f | head -1 | xargs -I{} mv {} ~/.local/bin/"$cmd" && \
+            chmod +x ~/.local/bin/"$cmd" && \
+            rm -f /tmp/_install.tar.gz || true
     fi
 }
 
@@ -54,24 +61,23 @@ elif command -v apt >/dev/null 2>&1; then
     install_apt eza
     install_starship
 elif command -v dnf >/dev/null 2>&1; then
-    # Use webi for tools not in standard Amazon Linux repos
-    install_dnf_webi fzf
-    install_dnf_webi zoxide
-    install_dnf_webi rg
-    install_dnf_webi fd
-    install_dnf_webi bat
-    install_dnf_webi delta
-    # direnv — not on webi, install from official script
+    mkdir -p ~/.local/bin
+    install_github_release fzf \
+        "https://github.com/junegunn/fzf/releases/latest/download/fzf-linux_arm64.tar.gz"
+    install_github_release zoxide \
+        "https://github.com/ajeetdsouza/zoxide/releases/latest/download/zoxide-aarch64-unknown-linux-musl.tar.gz"
+    install_github_release rg \
+        "https://github.com/BurntSushi/ripgrep/releases/latest/download/ripgrep-aarch64-unknown-linux-musl.tar.gz" rg
+    install_github_release fd \
+        "https://github.com/sharkdp/fd/releases/latest/download/fd-aarch64-unknown-linux-musl.tar.gz" fd
+    install_github_release bat \
+        "https://github.com/sharkdp/bat/releases/latest/download/bat-aarch64-unknown-linux-musl.tar.gz" bat
+    install_github_release delta \
+        "https://github.com/dandavison/delta/releases/latest/download/delta-aarch64-unknown-linux-gnu.tar.gz" delta
+    install_github_release eza \
+        "https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-unknown-linux-musl.tar.gz" eza
     if ! command -v direnv >/dev/null 2>&1; then
         curl -sfL https://direnv.net/install.sh | bash || true
-    fi
-    # eza — not on webi, install from GitHub release (aarch64)
-    if ! command -v eza >/dev/null 2>&1; then
-        curl -fLo /tmp/eza.tar.gz \
-            "https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-unknown-linux-musl.tar.gz" && \
-            tar -xzf /tmp/eza.tar.gz -C /tmp && \
-            mv /tmp/eza ~/.local/bin/eza && \
-            rm -f /tmp/eza.tar.gz || true
     fi
     install_starship
 elif command -v pacman >/dev/null 2>&1; then
