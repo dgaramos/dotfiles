@@ -1,0 +1,17 @@
+#!/bin/sh
+# run_onchange_05-configure-gh-auth — authenticate GitHub CLI if not already logged in
+
+set -eu
+
+if ! command -v gh >/dev/null 2>&1; then
+    echo "gh not found, skipping auth setup"
+    exit 0
+fi
+
+if gh auth status >/dev/null 2>&1; then
+    echo "gh already authenticated"
+    exit 0
+fi
+
+echo "GitHub CLI is not authenticated. Starting login..."
+gh auth login
