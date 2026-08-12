@@ -22,7 +22,15 @@ install_pacman() {
 
 install_dnf() {
     if command -v dnf >/dev/null 2>&1; then
-        sudo dnf install -y "$@" || true
+        for pkg in "$@"; do
+            sudo dnf install -y "$pkg" || true
+        done
+    fi
+}
+
+install_dnf_webi() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        curl -sS "https://webi.sh/$1" | sh || true
     fi
 }
 
@@ -46,7 +54,13 @@ elif command -v apt >/dev/null 2>&1; then
     install_apt eza
     install_starship
 elif command -v dnf >/dev/null 2>&1; then
-    install_dnf fzf zoxide ripgrep fd-find bat eza direnv git-delta
+    # Install what's available in dnf repos individually
+    install_dnf fzf ripgrep bat direnv
+    # Use webi for tools not in standard Amazon Linux repos
+    install_dnf_webi zoxide
+    install_dnf_webi eza
+    install_dnf_webi fd
+    install_dnf_webi delta
     install_starship
 elif command -v pacman >/dev/null 2>&1; then
     install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship
