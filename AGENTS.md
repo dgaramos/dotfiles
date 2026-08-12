@@ -34,6 +34,7 @@ Use the correct layer:
 - work Mac -> `private_dot_config/zsh/hosts/work-mac.zsh`
 - homelab -> `private_dot_config/zsh/hosts/homelab.zsh`
 - Steam Deck -> `private_dot_config/zsh/hosts/steamdeck.zsh`
+- EC2 (Amazon Linux) -> `private_dot_config/zsh/hosts/ec2.zsh`
 
 Do not place host-specific values in shared files.
 
@@ -176,3 +177,4 @@ Ask before destructive operations such as history rewrites, forced pushes, or ma
 - Work Mac
 - lincoln-lab-pi-5
 - Steam Deck
+- EC2 (at-open-webui-dedicated, Amazon Linux, Graviton3)

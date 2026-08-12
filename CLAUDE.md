@@ -6,7 +6,7 @@ This repository contains personal dotfiles managed with chezmoi.
 
 The goal is to maintain a portable, reproducible shell environment across multiple machines while keeping host-specific and machine-local configuration isolated.
 
-The repository is private and must not contain secrets.
+The repository is public. It must not contain secrets.
 
 ## Configuration Boundaries
 
@@ -30,6 +30,7 @@ private_dot_config/zsh/hosts/mac.zsh
 private_dot_config/zsh/hosts/work-mac.zsh
 private_dot_config/zsh/hosts/homelab.zsh
 private_dot_config/zsh/hosts/steamdeck.zsh
+private_dot_config/zsh/hosts/ec2.zsh
 ```
 
 Do not place host-specific values in shared files.
@@ -110,8 +111,12 @@ Current tools include:
 - eza
 - direnv
 - delta
+- starship
+- gh
 
 Platform-specific executable differences are handled in shell configuration where necessary, such as `fdfind` and `batcat` on Debian.
+
+On apt and dnf systems, `starship` and `gh` are installed via their official installers since they are not available as standard distribution packages.
 
 Do not replace standard POSIX commands such as `find` or `grep` with incompatible aliases. Use separate convenience aliases such as `ff` and `rgrep`.
 

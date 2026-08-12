@@ -4,7 +4,7 @@
 
 ![chezmoi](https://img.shields.io/badge/chezmoi-dotfiles-blue)
 ![shell](https://img.shields.io/badge/shell-zsh-green)
-![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
+![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20EC2-lightgrey)
 
 </p>
 
@@ -196,6 +196,8 @@ Currently managed tools include:
 - eza
 - direnv
 - delta
+- starship
+- gh
 
 Package names are adapted when necessary for each platform.
 
