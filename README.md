@@ -30,12 +30,13 @@ This repository provides a portable developer workstation setup with shared shel
 | Work Mac | `work` | `work-mac` |
 | Raspberry Pi | `personal` | `homelab` |
 | Steam Deck | `personal` | `steamdeck` |
+| EC2 (Amazon Linux) | `work` | `ec2` |
 
 ## Structure
 
 ```text
 .
-├── .chezmoi.toml.tmpl
+├── .chezmoi.yaml.tmpl
 ├── .chezmoiscripts/
 ├── AGENTS.md
 ├── CLAUDE.md
@@ -53,7 +54,8 @@ This repository provides a portable developer workstation setup with shared shel
             ├── mac.zsh
             ├── work-mac.zsh
             ├── homelab.zsh
-            └── steamdeck.zsh
+            ├── steamdeck.zsh
+            └── ec2.zsh
 ```
 
 ## Configuration Model
@@ -70,7 +72,8 @@ Configuration is split into layers.
     ├── mac.zsh
     ├── work-mac.zsh
     ├── homelab.zsh
-    └── steamdeck.zsh
+    ├── steamdeck.zsh
+    └── ec2.zsh
 ```
 
 Shared behavior belongs in `common.zsh`.
@@ -152,22 +155,27 @@ Depending on the machine:
 
 ## Installation
 
-Install chezmoi.
-
-On macOS:
+### macOS
 
 ```bash
 brew install chezmoi
-```
-
-Initialize the repository:
-
-```bash
 chezmoi init <repository>
 chezmoi apply
 ```
 
-Review changes:
+### Linux (one-liner)
+
+Installs chezmoi and applies the dotfiles in a single command — no GitHub login required:
+
+```bash
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <repository>
+```
+
+Replace `<repository>` with the GitHub repository URL or `owner/repo` shorthand.
+
+When prompted, enter the profile (`personal` or `work`) and role (`mac`, `work-mac`, `homelab`, `steamdeck`, or `ec2`).
+
+### Review changes
 
 ```bash
 chezmoi diff
@@ -199,6 +207,17 @@ Some Debian packages use different executable names:
 |---|---|
 | `fd` | `fdfind` |
 | `bat` | `batcat` |
+
+The shell configuration handles these differences automatically.
+
+### Amazon Linux (EC2)
+
+Some tools use different package names on Amazon Linux:
+
+| Tool | Package name |
+|---|---|
+| `fd` | `fd-find` |
+| `delta` | `git-delta` |
 
 The shell configuration handles these differences automatically.
 
@@ -387,7 +406,12 @@ dotfiles repository
         │       ├── env
         │       └── names
         |
-        └── Steam Deck
+        ├── Steam Deck
+        │   └── ~/.config/local-env/
+        │       ├── env
+        │       └── names
+        |
+        └── EC2
             └── ~/.config/local-env/
                 ├── env
                 └── names
@@ -463,4 +487,4 @@ Keep commits small and focused.
 
 ## License
 
-Private configuration repository.
+MIT

@@ -1,0 +1,6 @@
+{{- $profile := promptStringOnce . "profile" "Profile (personal/work)" -}}
+{{- $role := promptStringOnce . "role" "Role (mac/work-mac/homelab/steamdeck/ec2)" -}}
+
+data:
+  profile: {{ $profile | quote }}
+  role: {{ $role | quote }}
