@@ -117,6 +117,41 @@ Aliases in chezmoi-managed zsh files must only reference:
 
 Never alias external services or application-specific commands (e.g. `open-webui`, `nginx`, app-specific CLIs) in the repo. Those belong in `~/.config/zsh/local.zsh` on the specific machine. The `check-dotfiles` scanner enforces this automatically.
 
+### localz
+
+The `localz` utility manages `~/.config/zsh/local.zsh`.
+
+Source: `dot_local/bin/executable_localz`
+Installed: `~/.local/bin/localz`
+
+```text
+localz edit        → open local.zsh in $EDITOR
+localz show        → print local.zsh contents
+localz list        → list aliases and functions
+localz add NAME CMD → append an alias
+```
+
+### check-dotfiles
+
+The `check-dotfiles` scanner runs as a pre-commit hook and can also be run manually.
+
+Source: `dot_local/bin/executable_check-dotfiles`
+Installed: `~/.local/bin/check-dotfiles`
+
+```text
+check-dotfiles --staged   → scan staged files (used by pre-commit hook)
+check-dotfiles --all      → scan all tracked files
+check-dotfiles FILE       → scan specific file
+```
+
+**Blocks:** private keys, AWS keys, GitHub tokens, secret assignments, EC2 hostnames, aliases referencing known external services (open-webui, nginx, etc.).
+
+**Warns:** IPv4 addresses, aliases referencing commands not installed by this repository.
+
+To suppress a false positive, add `# check-dotfiles: ignore` to the line.
+
+When adding a new tool to the repo, add it to `REPO_INSTALLED` in the script.
+
 ### sshm
 
 The `sshm` utility manages SSH host configuration.
@@ -140,7 +175,12 @@ run_once_02-install-homebrew     → macOS only: installs Homebrew
 run_once_03-install-oh-my-zsh    → installs oh-my-zsh (requires zsh)
 run_once_04-install-zsh-plugins  → clones zsh plugins (requires oh-my-zsh)
 run_onchange_install-cli-tools   → installs CLI tools via platform package manager
+run_onchange_05-configure-gh-auth → authenticates gh if available (any platform)
+run_onchange_06-configure-git    → macOS only: sets git identity and wires delta config
+run_onchange_install-git-hooks   → installs pre-commit hook in chezmoi source repo
 ```
+
+`run_onchange_06-configure-git` prompts for `GIT_NAME` and `GIT_EMAIL` on first run if not set via `local-env`, then saves them. On subsequent runs the variables are already loaded by `common.zsh` and no prompt appears.
 
 `run_once_` scripts are tracked by filename — renaming causes a re-run on all machines. Only rename when the script is idempotent.
 

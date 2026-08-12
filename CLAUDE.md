@@ -140,6 +140,31 @@ Do not replace standard POSIX commands such as `find` or `grep` with incompatibl
 
 Aliases must only reference commands that this repository installs or that are standard system commands available on all supported platforms. Never alias commands for external services or applications not managed here (e.g. `open-webui`, `nginx`, application-specific CLIs). Those belong in `~/.config/zsh/local.zsh` on the specific machine.
 
+## Secret Scanner (check-dotfiles)
+
+The repository includes a `check-dotfiles` scanner installed as a pre-commit hook.
+
+Source:
+
+```text
+dot_local/bin/executable_check-dotfiles
+```
+
+Installed path:
+
+```text
+~/.local/bin/check-dotfiles
+```
+
+The hook runs automatically on every commit. It can also be run manually:
+
+```text
+check-dotfiles --staged   → scan staged files
+check-dotfiles --all      → scan all tracked files
+```
+
+It blocks commits containing secrets, private IPs, EC2 hostnames, and aliases referencing external services not installed by this repository. Add `# check-dotfiles: ignore` to suppress false positives.
+
 ## Local Shell Manager (localz)
 
 The repository includes a `localz` utility for managing `~/.config/zsh/local.zsh`.

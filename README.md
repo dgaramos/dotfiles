@@ -15,12 +15,16 @@ This repository provides a portable developer workstation setup with shared shel
 ## Features
 
 - Centralized ZSH configuration
-- Cross-platform support
+- Cross-platform support (macOS, Linux, EC2, Steam Deck)
 - Automated CLI installation
 - Machine/profile separation
-- Machine-local configuration
-- Secret-safe configuration
-- Reproducible workstation setup
+- Machine-local configuration via `local-env` and `local.zsh`
+- Secret scanner pre-commit hook
+- SSH manager (`sshm`)
+- Local shell manager (`localz`)
+- Git identity managed per-machine via `local-env`
+- bat and delta pre-configured
+- Secret-safe — never commits credentials or private references
 
 ## Supported Machines
 
@@ -43,9 +47,17 @@ This repository provides a portable developer workstation setup with shared shel
 ├── README.md
 ├── dot_local/
 │   └── bin/
-│       └── executable_local-env
+│       ├── executable_check-dotfiles
+│       ├── executable_local-env
+│       ├── executable_localz
+│       └── executable_sshm
 ├── dot_zshrc.tmpl
 └── private_dot_config/
+    ├── bat/
+    │   └── config
+    ├── delta/
+    │   └── config
+    ├── starship.toml
     └── zsh/
         ├── common.zsh
         ├── personal.zsh
@@ -227,11 +239,14 @@ chezmoi status
 Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply` in alphabetical order. Numeric prefixes enforce the correct sequence:
 
 ```text
-01-install-zsh         → installs zsh + sets as default shell (Linux only)
-02-install-homebrew    → installs Homebrew (macOS only)
-03-install-oh-my-zsh   → installs oh-my-zsh
-04-install-zsh-plugins → clones zsh plugins
-install-cli-tools      → installs CLI tools (re-runs when content changes)
+01-install-zsh          → installs zsh + sets as default shell (Linux only)
+02-install-homebrew     → installs Homebrew (macOS only)
+03-install-oh-my-zsh    → installs oh-my-zsh
+04-install-zsh-plugins  → clones zsh plugins
+05-configure-gh-auth    → authenticates gh if available
+06-configure-git        → macOS only: sets git identity, wires delta config
+install-cli-tools       → installs CLI tools (re-runs when content changes)
+install-git-hooks       → installs pre-commit scanner hook
 ```
 
 All scripts are idempotent — safe to re-run on machines where dependencies are already installed.
