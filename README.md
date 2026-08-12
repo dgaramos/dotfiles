@@ -191,8 +191,10 @@ The one-liner installer may be unavailable. If `get.chezmoi.io` returns a 503, i
 
 ```bash
 curl -fLo /tmp/chezmoi.tar.gz https://github.com/twpayne/chezmoi/releases/download/v2.72.0/chezmoi_2.72.0_linux_arm64.tar.gz \
-  && sudo tar -xzf /tmp/chezmoi.tar.gz -C /usr/local/bin chezmoi
-chezmoi init --apply https://github.com/dgaramos/dotfiles.git
+  && sudo tar -xzf /tmp/chezmoi.tar.gz -C /usr/local/bin chezmoi \
+  && chezmoi init https://github.com/dgaramos/dotfiles.git \
+  && rm -f ~/.local/share/chezmoi/.chezmoi.toml.tmpl \
+  && chezmoi apply
 ```
 
 When prompted, enter profile `work` and role `ec2`.
