@@ -1,0 +1,18 @@
+#!/bin/sh
+# run_onchange_06-configure-git — wire delta config into git global config
+
+set -eu
+
+if ! command -v git >/dev/null 2>&1; then
+    exit 0
+fi
+
+DELTA_CONFIG="$HOME/.config/delta/config"
+
+# Include delta config if not already included
+if ! git config --global --get-all include.path | grep -qF "$DELTA_CONFIG"; then
+    git config --global --add include.path "$DELTA_CONFIG"
+fi
+
+git config --global core.pager delta
+git config --global interactive.diffFilter 'delta --color-only'

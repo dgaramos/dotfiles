@@ -1,0 +1,27 @@
+[delta]
+    navigate = true
+    side-by-side = true
+    line-numbers = true
+    syntax-theme = ansi
+    hyperlinks = true
+    width = auto
+
+    file-style = bold yellow ul
+    file-decoration-style = none
+
+    hunk-header-style = file line-number syntax
+    hunk-header-decoration-style = blue box
+
+    line-numbers-left-style = blue
+    line-numbers-right-style = blue
+    line-numbers-minus-style = red
+    line-numbers-plus-style = green
+    line-numbers-zero-style = "#808080"
+
+    blame-code-style = syntax
+
+[merge]
+    conflictstyle = diff3
+
+[diff]
+    colorMoved = default

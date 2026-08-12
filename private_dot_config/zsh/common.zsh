@@ -162,14 +162,6 @@ if command -v direnv >/dev/null 2>&1; then
     eval "$(direnv hook zsh)"
 fi
 
-# Git delta
-if command -v delta >/dev/null 2>&1; then
-    git config --global core.pager delta
-    git config --global interactive.diffFilter 'delta --color-only'
-    git config --global delta.navigate true
-    git config --global delta.side-by-side true
-fi
-
 # Machine-local environment variables managed by local-env.
 # Clear previously managed variables first so removed values are not
 # inherited by a new shell.

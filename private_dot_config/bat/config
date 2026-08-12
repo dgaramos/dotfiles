@@ -1,0 +1,16 @@
+# Use terminal's own ANSI colors — works in light and dark terminals
+--theme=ansi
+
+# Line numbers + git change markers + file header
+--style=numbers,changes,header-filename
+
+--italic-text=always
+
+# Treat common extensionless files as shell
+--map-syntax="*.env:Bourne Again Shell (bash)"
+--map-syntax=".env*:Bourne Again Shell (bash)"
+--map-syntax="Makefile*:Makefile"
+
+--wrap=auto
+
+--pager="less -RF"
