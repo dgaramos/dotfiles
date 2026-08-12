@@ -54,13 +54,21 @@ elif command -v apt >/dev/null 2>&1; then
     install_apt eza
     install_starship
 elif command -v dnf >/dev/null 2>&1; then
-    # Install what's available in dnf repos individually
-    install_dnf fzf ripgrep bat direnv
     # Use webi for tools not in standard Amazon Linux repos
+    install_dnf_webi fzf
     install_dnf_webi zoxide
-    install_dnf_webi eza
+    install_dnf_webi rg
     install_dnf_webi fd
+    install_dnf_webi bat
+    install_dnf_webi direnv
     install_dnf_webi delta
+    # eza is not on webi — install from GitHub release
+    if ! command -v eza >/dev/null 2>&1; then
+        EZA_URL="https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-unknown-linux-musl.tar.gz"
+        curl -fLo /tmp/eza.tar.gz "$EZA_URL" && \
+            tar -xzf /tmp/eza.tar.gz -C ~/.local/bin eza && \
+            rm /tmp/eza.tar.gz || true
+    fi
     install_starship
 elif command -v pacman >/dev/null 2>&1; then
     install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship
