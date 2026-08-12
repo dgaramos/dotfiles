@@ -46,6 +46,7 @@ alias czd='chezmoi diff'
 alias cza='chezmoi apply'
 alias czu='chezmoi update'
 alias cze='chezmoi edit'
+alias czr='exec zsh'
 
 if command -v starship >/dev/null 2>&1; then
     eval "$(starship init zsh)"
