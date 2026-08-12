@@ -38,8 +38,9 @@ alias cza='chezmoi apply'
 alias czu='chezmoi update'
 alias cze='chezmoi edit'
 
-# Always make it obvious which machine this shell belongs to.
-PROMPT='%{$fg_bold[green]%}➜  %{$fg[cyan]%}%n@%m %{$fg[blue]%}%~%{$reset_color%} $(git_prompt_info)'
+if command -v starship >/dev/null 2>&1; then
+    eval "$(starship init zsh)"
+fi
 
 # ============================================================
 # Optional modern CLI tools
