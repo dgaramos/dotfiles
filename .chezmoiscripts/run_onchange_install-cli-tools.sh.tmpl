@@ -45,11 +45,9 @@ elif command -v apt >/dev/null 2>&1; then
     install_apt zoxide
     install_apt eza
     install_starship
-    install_gh
 elif command -v dnf >/dev/null 2>&1; then
     install_dnf fzf zoxide ripgrep fd-find bat eza direnv git-delta
     install_starship
-    install_gh
 elif command -v pacman >/dev/null 2>&1; then
-    install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship github-cli
+    install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship
 fi

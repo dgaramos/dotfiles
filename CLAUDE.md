@@ -132,7 +132,9 @@ Current tools include:
 
 Platform-specific executable differences are handled in shell configuration where necessary, such as `fdfind` and `batcat` on Debian.
 
-On apt and dnf systems, `starship` and `gh` are installed via their official installers since they are not available as standard distribution packages.
+On apt and dnf systems, `starship` is installed via its official installer since it is not available as a standard distribution package.
+
+`gh` is only installed on macOS. On Linux machines it is not available — authenticate via SSH keys or other means instead.
 
 Do not replace standard POSIX commands such as `find` or `grep` with incompatible aliases. Use separate convenience aliases such as `ff` and `rgrep`.
 
