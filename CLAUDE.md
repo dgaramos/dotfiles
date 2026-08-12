@@ -134,7 +134,7 @@ Platform-specific executable differences are handled in shell configuration wher
 
 On apt and dnf systems, `starship` is installed via its official installer since it is not available as a standard distribution package.
 
-`gh` is only installed on macOS. On Linux machines it is not available — authenticate via SSH keys or other means instead.
+`gh` is only installed on macOS by these dotfiles. Linux machines may have it installed separately.
 
 Do not replace standard POSIX commands such as `find` or `grep` with incompatible aliases. Use separate convenience aliases such as `ff` and `rgrep`.
 
