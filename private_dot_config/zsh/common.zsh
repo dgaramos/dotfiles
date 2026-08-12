@@ -124,9 +124,28 @@ if command -v fzf >/dev/null 2>&1; then
     fi
 fi
 
-# Print timestamp when a command starts executing
+# Execution time report: start timestamp, end timestamp, delta
 preexec() {
+    _cmd_start=$EPOCHSECONDS
     echo "\033[2m▶ $(date '+%H:%M:%S')\033[0m"
+}
+
+precmd() {
+    if [[ -n $_cmd_start ]]; then
+        local delta=$(( EPOCHSECONDS - _cmd_start ))
+        local end_time=$(date '+%H:%M:%S')
+
+        if (( delta >= 3600 )); then
+            local duration="$(( delta / 3600 ))h $(( (delta % 3600) / 60 ))m $(( delta % 60 ))s"
+        elif (( delta >= 60 )); then
+            local duration="$(( delta / 60 ))m $(( delta % 60 ))s"
+        else
+            local duration="${delta}s"
+        fi
+
+        echo "\033[2m■ $end_time (+${duration})\033[0m"
+        unset _cmd_start
+    fi
 }
 
 # History substring search
