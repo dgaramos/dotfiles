@@ -111,6 +111,22 @@ Do not replace POSIX commands such as `find` or `grep` with incompatible aliases
 
 Use separate convenience aliases instead.
 
+### Bootstrap scripts
+
+Scripts in `.chezmoiscripts/` run in alphabetical order. Numeric prefixes enforce the correct sequence — do not rename without preserving order:
+
+```text
+run_once_01-install-zsh          → Linux only: installs zsh, sets as default shell
+run_once_02-install-homebrew     → macOS only: installs Homebrew
+run_once_03-install-oh-my-zsh    → installs oh-my-zsh (requires zsh)
+run_once_04-install-zsh-plugins  → clones zsh plugins (requires oh-my-zsh)
+run_onchange_install-cli-tools   → installs CLI tools via platform package manager
+```
+
+`run_once_` scripts are tracked by filename — renaming causes a re-run on all machines. Only rename when the script is idempotent.
+
+`run_onchange_` scripts re-run on all machines whenever the file content changes.
+
 ### Chezmoi
 
 Before applying changes:

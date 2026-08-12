@@ -93,6 +93,22 @@ Use it for local shell behavior that does not belong in `local-env`.
 
 Never add `local.zsh` to chezmoi.
 
+## Bootstrap Scripts
+
+Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply`. Execution order is enforced by numeric prefixes — never rename without preserving the order.
+
+```text
+run_once_01-install-zsh          → installs zsh + sets as default shell (Linux only)
+run_once_02-install-homebrew     → installs Homebrew (macOS only)
+run_once_03-install-oh-my-zsh    → installs oh-my-zsh
+run_once_04-install-zsh-plugins  → clones zsh plugins
+run_onchange_install-cli-tools   → installs CLI tools (re-runs when content changes)
+```
+
+`run_once_` scripts are tracked by filename. Renaming causes them to re-run on all machines — acceptable only when scripts are idempotent.
+
+`run_onchange_` scripts re-run whenever the file content changes, on all machines.
+
 ## CLI Tools
 
 CLI tooling is managed through:

@@ -192,6 +192,20 @@ chezmoi diff
 chezmoi status
 ```
 
+## Bootstrap Scripts
+
+Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply` in alphabetical order. Numeric prefixes enforce the correct sequence:
+
+```text
+01-install-zsh         → installs zsh + sets as default shell (Linux only)
+02-install-homebrew    → installs Homebrew (macOS only)
+03-install-oh-my-zsh   → installs oh-my-zsh
+04-install-zsh-plugins → clones zsh plugins
+install-cli-tools      → installs CLI tools (re-runs when content changes)
+```
+
+All scripts are idempotent — safe to re-run on machines where dependencies are already installed.
+
 ## CLI Bootstrap
 
 CLI tools are installed through chezmoi scripts.
