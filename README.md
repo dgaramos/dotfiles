@@ -185,6 +185,34 @@ Replace `<repository>` with the GitHub repository URL or `owner/repo` shorthand.
 
 When prompted, enter the profile (`personal` or `work`) and role (`mac`, `work-mac`, `homelab`, `steamdeck`, or `ec2`).
 
+### EC2 (Amazon Linux, Graviton/ARM64)
+
+The one-liner installer may be unavailable. If `get.chezmoi.io` returns a 503, install chezmoi directly from GitHub — and install to a permanent path, not `/tmp`, which is cleared between sessions:
+
+```bash
+curl -fLo /tmp/chezmoi.tar.gz https://github.com/twpayne/chezmoi/releases/download/v2.72.0/chezmoi_2.72.0_linux_arm64.tar.gz \
+  && sudo tar -xzf /tmp/chezmoi.tar.gz -C /usr/local/bin chezmoi
+chezmoi init --apply https://github.com/dgaramos/dotfiles.git
+```
+
+When prompted, enter profile `work` and role `ec2`.
+
+After applying, reload the shell:
+
+```bash
+exec zsh
+```
+
+#### Known issues
+
+| Problem | Cause | Fix |
+|---|---|---|
+| `get.chezmoi.io` returns 503 | Installer service unavailable | Use the direct GitHub release above |
+| `multiple config file templates` | Legacy `.chezmoi.toml.tmpl` present in source | `rm ~/.local/share/chezmoi/.chezmoi.toml.tmpl` then re-run init |
+| `multiple config files` | `.chezmoi.toml` and `.chezmoi.yaml` coexist | `rm ~/.config/chezmoi/chezmoi.toml` then `chezmoi apply` |
+| `chsh: command not found` | Amazon Linux omits `chsh` by default | `sudo dnf install -y util-linux-user` |
+| `zsh: command not found` after apply | chezmoi installed manually skips bootstrap scripts | `sudo dnf install -y zsh` then `chezmoi apply` |
+
 ### Review changes
 
 ```bash
