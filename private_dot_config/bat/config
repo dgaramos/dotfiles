@@ -2,7 +2,7 @@
 --theme=ansi
 
 # Line numbers + git change markers + file header
---style=numbers,changes,header-filename
+--style=auto
 
 --italic-text=always
 
