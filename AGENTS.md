@@ -111,6 +111,19 @@ Do not replace POSIX commands such as `find` or `grep` with incompatible aliases
 
 Use separate convenience aliases instead.
 
+### sshm
+
+The `sshm` utility manages SSH host configuration.
+
+Source: `dot_local/bin/executable_sshm`
+Installed: `~/.local/bin/sshm`
+
+`sshm list` shows configured hosts with their identity files.
+`sshm add` runs an interactive wizard — handles `.pem` files automatically.
+`sshm copy-id <host>` installs a public key and supports `.pem` derivation.
+
+Infrastructure-specific SSH host entries (server IPs, private hostnames) must never be committed to this repository. They live in `~/.ssh/config` on each machine.
+
 ### Bootstrap scripts
 
 Scripts in `.chezmoiscripts/` run in alphabetical order. Numeric prefixes enforce the correct sequence — do not rename without preserving order:

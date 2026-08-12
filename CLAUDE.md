@@ -136,6 +136,38 @@ On apt and dnf systems, `starship` and `gh` are installed via their official ins
 
 Do not replace standard POSIX commands such as `find` or `grep` with incompatible aliases. Use separate convenience aliases such as `ff` and `rgrep`.
 
+## SSH Manager (sshm)
+
+The repository includes an `sshm` utility for managing SSH connections.
+
+Source:
+
+```text
+dot_local/bin/executable_sshm
+```
+
+Installed path:
+
+```text
+~/.local/bin/sshm
+```
+
+The main commands are:
+
+```text
+sshm list                  → show configured SSH hosts (HOST, HOSTNAME, USER, KEY)
+sshm add                   → interactive wizard to add a new SSH host
+sshm edit                  → open ~/.ssh/config in $EDITOR
+sshm copy-id <host>        → install a public key on a remote host
+sshm keygen                → generate a new key pair
+```
+
+`sshm add` handles `.pem` files by copying them to `~/.ssh/`, setting permissions to 400, deriving the public key, and writing the appropriate `~/.ssh/config` block.
+
+`sshm copy-id` accepts `.pem` keys by deriving the public key with `ssh-keygen -y -f`.
+
+Infrastructure-specific SSH aliases (IPs, host names for private servers) must never be committed. Configure them via `sshm add` and keep them in `~/.ssh/config` locally.
+
 ## Secrets
 
 Never commit:
