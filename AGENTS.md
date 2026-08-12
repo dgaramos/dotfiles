@@ -111,6 +111,12 @@ Do not replace POSIX commands such as `find` or `grep` with incompatible aliases
 
 Use separate convenience aliases instead.
 
+Aliases in chezmoi-managed zsh files must only reference:
+- commands installed by this repository (fzf, zoxide, rg, fd, bat, eza, direnv, delta, starship, gh, chezmoi, local-env, sshm)
+- standard POSIX/system commands available on all supported platforms
+
+Never alias external services or application-specific commands (e.g. `open-webui`, `nginx`, app-specific CLIs) in the repo. Those belong in `~/.config/zsh/local.zsh` on the specific machine. The `check-dotfiles` scanner enforces this automatically.
+
 ### sshm
 
 The `sshm` utility manages SSH host configuration.

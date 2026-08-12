@@ -136,6 +136,8 @@ On apt and dnf systems, `starship` and `gh` are installed via their official ins
 
 Do not replace standard POSIX commands such as `find` or `grep` with incompatible aliases. Use separate convenience aliases such as `ff` and `rgrep`.
 
+Aliases must only reference commands that this repository installs or that are standard system commands available on all supported platforms. Never alias commands for external services or applications not managed here (e.g. `open-webui`, `nginx`, application-specific CLIs). Those belong in `~/.config/zsh/local.zsh` on the specific machine.
+
 ## SSH Manager (sshm)
 
 The repository includes an `sshm` utility for managing SSH connections.

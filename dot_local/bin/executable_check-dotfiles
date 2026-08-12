@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Scan dotfiles source for secrets, IPs, and private hostnames.
+Scan dotfiles source for secrets, IPs, private hostnames, and uninstalled command aliases.
 
 Usage:
   check-dotfiles [files...]   scan specific files
@@ -12,6 +12,84 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Commands this repository installs or manages
+# ---------------------------------------------------------------------------
+# Tools installed via run_onchange_install-cli-tools
+REPO_INSTALLED = {
+    "fzf", "zoxide", "rg", "fd", "fdfind", "bat", "batcat", "eza",
+    "direnv", "delta", "starship", "gh", "chezmoi",
+    # installed by sshm/local-env themselves
+    "local-env", "sshm", "check-dotfiles",
+}
+
+# Standard POSIX/system commands present on all supported platforms
+SYSTEM_COMMANDS = {
+    # POSIX core
+    "ls", "cat", "grep", "find", "echo", "printf", "cd", "cp", "mv", "rm",
+    "mkdir", "touch", "chmod", "chown", "ln", "head", "tail", "sed", "awk",
+    "sort", "uniq", "wc", "cut", "tr", "tee", "xargs", "env", "export",
+    "source", "eval", "exec", "exit", "read", "test", "true", "false",
+    "which", "command", "type", "alias", "unalias", "set", "unset",
+    "pwd", "basename", "dirname", "date", "sleep", "kill", "ps",
+    "curl", "wget", "ssh", "scp", "rsync", "tar", "gzip", "gunzip",
+    "zip", "unzip", "openssl", "gpg", "less", "more", "man",
+    "diff", "patch", "file", "stat", "du", "df", "mount", "lsof",
+    "ping", "nslookup", "dig", "ifconfig", "ip", "netstat", "ss",
+    "systemctl", "journalctl", "service",   # init systems (system-level, not app-specific)
+    "brew", "apt", "apt-get", "dnf", "pacman", "yum",  # package managers
+    "python3", "python", "node", "npm", "npx", "pip", "pip3",
+    "java", "javac", "mvn", "gradle",
+    "git", "make", "gcc", "clang",
+    "sudo", "su", "chsh", "id", "whoami", "groups",
+    "open", "xdg-open",  # macOS / Linux desktop openers
+    "clear", "reset", "tput",
+    "code", "vim", "nvim", "nano", "emacs",
+    "docker", "docker-compose", "kubectl", "helm",
+    "aws", "aws_completer",  # AWS CLI (may be pre-installed on EC2)
+    "complete", "compdef",   # zsh completion builtins
+}
+
+# zsh builtins and special constructs that appear as "commands"
+ZSH_BUILTINS = {
+    "if", "then", "else", "elif", "fi", "for", "do", "done", "while",
+    "until", "case", "esac", "function", "local", "return", "typeset",
+    "declare", "readonly", "bindkey", "zle", "autoload", "compinit",
+    "setopt", "unsetopt", "zstyle", "print", "builtin",
+}
+
+KNOWN_COMMANDS = REPO_INSTALLED | SYSTEM_COMMANDS | ZSH_BUILTINS
+
+# ---------------------------------------------------------------------------
+# Infrastructure-specific service names that must not appear in aliases
+# (commands like systemctl/journalctl are fine; referencing specific external
+# services by name is not — those belong in local.zsh, not in the repo)
+# ---------------------------------------------------------------------------
+EXTERNAL_SERVICE_RE = re.compile(
+    r"""alias\s+\S+\s*=\s*['"].*\b("""
+    + "|".join([
+        r"open-webui",
+        r"nginx(?!-[a-z])",   # nginx service (not nginx-related tools)
+        r"mysql(?!d?\b)",
+        r"postgresql",
+        r"mongodb",
+        r"rabbitmq",
+        r"redis-server",
+        r"elasticsearch",
+        r"kibana",
+        r"grafana-server",
+        r"prometheus",
+    ])
+    + r")\b",
+    re.IGNORECASE,
+)
+
+# Regex: alias name='CMD args...'  or  alias name="CMD args..."
+# Captures the first token of the alias body as the command.
+ALIAS_RE = re.compile(
+    r"""^\s*alias\s+[\w.:-]+=(?P<q>['"]?)(?P<body>[^'";\s]+)""",
+)
 
 # ---------------------------------------------------------------------------
 # Patterns that BLOCK the commit (high confidence)
@@ -58,13 +136,13 @@ WARN_PATTERNS = [
     (
         "ipv4-address",
         re.compile(
-            r"\b(?!127\.0\.0\.1\b)"           # not loopback
-            r"(?!0\.0\.0\.0\b)"               # not unspecified
-            r"(?!255\.255\.255\.255\b)"        # not broadcast
-            r"(?!192\.0\.2\.\d+\b)"           # not TEST-NET-1
-            r"(?!198\.51\.100\.\d+\b)"        # not TEST-NET-2
-            r"(?!203\.0\.113\.\d+\b)"         # not TEST-NET-3
-            r"(?!10\.0\.0\.1\b)"              # not common gateway example
+            r"\b(?!127\.0\.0\.1\b)"
+            r"(?!0\.0\.0\.0\b)"
+            r"(?!255\.255\.255\.255\b)"
+            r"(?!192\.0\.2\.\d+\b)"
+            r"(?!198\.51\.100\.\d+\b)"
+            r"(?!203\.0\.113\.\d+\b)"
+            r"(?!10\.0\.0\.1\b)"
             r"(\d{1,3}\.){3}\d{1,3}\b"
         ),
         "IPv4 address (verify this is not a private server IP)",
@@ -78,6 +156,12 @@ SKIP_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".woff", ".t
 
 # Lines containing these strings are ignored (explicit allowlist)
 ALLOWLIST_MARKERS = ["check-dotfiles: ignore", "notsecret", "example.com", "localhost"]
+
+# Only scan for uninstalled aliases in these paths
+ZSH_CONFIG_GLOBS = [
+    "private_dot_config/zsh/",
+    "dot_zshrc",
+]
 
 
 def get_staged_files():
@@ -101,7 +185,6 @@ def get_all_tracked_files():
 def should_skip(path: Path) -> bool:
     if path.suffix.lower() in SKIP_EXTENSIONS:
         return True
-    # Skip binary-like files
     try:
         path.read_bytes()[:512].decode("utf-8")
     except (UnicodeDecodeError, FileNotFoundError):
@@ -109,9 +192,29 @@ def should_skip(path: Path) -> bool:
     return False
 
 
+def is_zsh_config(path: Path) -> bool:
+    s = str(path)
+    return any(glob in s for glob in ZSH_CONFIG_GLOBS)
+
+
 def line_is_allowed(line: str) -> bool:
     lower = line.lower()
     return any(marker in lower for marker in ALLOWLIST_MARKERS)
+
+
+def extract_alias_command(line: str):
+    """Return the bare command name from an alias definition, or None."""
+    m = ALIAS_RE.match(line)
+    if not m:
+        return None
+    body = m.group("body")
+    # Strip leading path components — keep only the binary name
+    cmd = Path(body).name
+    # Strip common prefixes like sudo, env, command
+    for prefix in ("sudo", "env", "command"):
+        if cmd == prefix:
+            return None  # wrapping sudo/env is fine
+    return cmd
 
 
 def scan_file(path: Path):
@@ -125,11 +228,25 @@ def scan_file(path: Path):
 
     blocks = []
     warns = []
+    check_aliases = is_zsh_config(path)
+
+    # Track whether we're inside a `command -v ... >/dev/null` guard block
+    # Simple heuristic: if the line contains `command -v`, the next alias is guarded.
+    inside_guard = False
 
     for lineno, line in enumerate(content.splitlines(), 1):
+        stripped = line.strip()
+
         if line_is_allowed(line):
             continue
 
+        # Update guard state
+        if "command -v" in stripped or "if command" in stripped:
+            inside_guard = True
+        if stripped in ("fi", "done") or stripped.startswith("fi "):
+            inside_guard = False
+
+        # Secret / IP patterns
         for name, pattern, description in BLOCK_PATTERNS:
             if pattern.search(line):
                 blocks.append((lineno, name, description, line.strip()))
@@ -137,6 +254,28 @@ def scan_file(path: Path):
         for name, pattern, description in WARN_PATTERNS:
             if pattern.search(line):
                 warns.append((lineno, name, description, line.strip()))
+
+        # Uninstalled command alias check (only in zsh config files)
+        if check_aliases and stripped.startswith("alias "):
+            # Block: alias references a known external service by name
+            m = EXTERNAL_SERVICE_RE.search(stripped)
+            if m and not line_is_allowed(stripped):
+                blocks.append((
+                    lineno,
+                    "external-service-alias",
+                    f"alias references external service '{m.group(1)}' not installed by this repository — use local.zsh instead",
+                    stripped,
+                ))
+            # Warn: unguarded alias for an unknown command
+            elif not inside_guard:
+                cmd = extract_alias_command(stripped)
+                if cmd and cmd not in KNOWN_COMMANDS:
+                    warns.append((
+                        lineno,
+                        "uninstalled-alias",
+                        f"alias references '{cmd}' which is not installed by this repository",
+                        stripped,
+                    ))
 
     return blocks, warns
 
