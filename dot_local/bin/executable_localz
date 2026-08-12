@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""
+localz — manage ~/.config/zsh/local.zsh
+
+Commands:
+  localz edit           open local.zsh in $EDITOR
+  localz show           print local.zsh contents
+  localz list           list aliases and functions defined in local.zsh
+  localz add NAME CMD   append an alias to local.zsh
+"""
+
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+LOCAL_ZSH = Path.home() / ".config" / "zsh" / "local.zsh"
+
+
+def ensure_file():
+    LOCAL_ZSH.parent.mkdir(parents=True, exist_ok=True)
+    if not LOCAL_ZSH.exists():
+        LOCAL_ZSH.write_text("# Machine-local shell configuration.\n# Managed locally — do not commit.\n")
+        LOCAL_ZSH.chmod(0o600)
+
+
+def cmd_edit():
+    ensure_file()
+    editor = os.environ.get("EDITOR", "nano")
+    subprocess.run([editor, str(LOCAL_ZSH)])
+
+
+def cmd_show():
+    ensure_file()
+    print(LOCAL_ZSH.read_text(), end="")
+
+
+def cmd_list():
+    ensure_file()
+    content = LOCAL_ZSH.read_text()
+
+    aliases = []
+    functions = []
+
+    for line in content.splitlines():
+        stripped = line.strip()
+
+        m = re.match(r"^alias\s+([\w.:-]+)=['\"]?(.*?)['\"]?\s*$", stripped)
+        if m:
+            aliases.append((m.group(1), m.group(2)))
+            continue
+
+        m = re.match(r"^(?:function\s+)?([\w-]+)\s*\(\s*\)\s*\{", stripped)
+        if m:
+            functions.append(m.group(1))
+
+    if not aliases and not functions:
+        print("local.zsh is empty or has no aliases/functions.")
+        return
+
+    if aliases:
+        name_w = max(len(n) for n, _ in aliases)
+        print(f"\033[1mALIASES\033[0m")
+        for name, cmd in aliases:
+            print(f"  {name:<{name_w}}  {cmd}")
+
+    if functions:
+        print(f"\n\033[1mFUNCTIONS\033[0m")
+        for name in functions:
+            print(f"  {name}")
+
+
+def cmd_add(name, cmd):
+    ensure_file()
+    content = LOCAL_ZSH.read_text()
+
+    # Check for duplicate
+    if re.search(rf"^alias\s+{re.escape(name)}\s*=", content, re.MULTILINE):
+        print(f"alias '{name}' already exists in local.zsh. Use `localz edit` to modify it.")
+        sys.exit(1)
+
+    line = f"alias {name}='{cmd}'\n"
+
+    # Append under an existing section comment or at the end
+    with LOCAL_ZSH.open("a") as f:
+        if not content.endswith("\n"):
+            f.write("\n")
+        f.write(line)
+
+    print(f"Added: alias {name}='{cmd}'")
+
+
+def usage():
+    print(__doc__)
+    sys.exit(0)
+
+
+def main():
+    args = sys.argv[1:]
+
+    if not args or args[0] in ("-h", "--help", "help"):
+        usage()
+
+    command = args[0]
+
+    if command == "edit":
+        cmd_edit()
+    elif command == "show":
+        cmd_show()
+    elif command == "list":
+        cmd_list()
+    elif command == "add":
+        if len(args) < 3:
+            print("Usage: localz add NAME 'command args'")
+            sys.exit(1)
+        cmd_add(args[1], " ".join(args[2:]))
+    else:
+        print(f"Unknown command: {command}")
+        print("Run `localz --help` for usage.")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

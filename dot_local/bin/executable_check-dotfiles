@@ -20,8 +20,8 @@ from pathlib import Path
 REPO_INSTALLED = {
     "fzf", "zoxide", "rg", "fd", "fdfind", "bat", "batcat", "eza",
     "direnv", "delta", "starship", "gh", "chezmoi",
-    # installed by sshm/local-env themselves
-    "local-env", "sshm", "check-dotfiles",
+    # installed by sshm/local-env/localz themselves
+    "local-env", "sshm", "localz", "check-dotfiles",
 }
 
 # Standard POSIX/system commands present on all supported platforms

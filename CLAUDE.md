@@ -138,6 +138,31 @@ Do not replace standard POSIX commands such as `find` or `grep` with incompatibl
 
 Aliases must only reference commands that this repository installs or that are standard system commands available on all supported platforms. Never alias commands for external services or applications not managed here (e.g. `open-webui`, `nginx`, application-specific CLIs). Those belong in `~/.config/zsh/local.zsh` on the specific machine.
 
+## Local Shell Manager (localz)
+
+The repository includes a `localz` utility for managing `~/.config/zsh/local.zsh`.
+
+Source:
+
+```text
+dot_local/bin/executable_localz
+```
+
+Installed path:
+
+```text
+~/.local/bin/localz
+```
+
+The main commands are:
+
+```text
+localz edit           → open local.zsh in $EDITOR
+localz show           → print local.zsh contents
+localz list           → list aliases and functions defined in local.zsh
+localz add NAME CMD   → append an alias to local.zsh
+```
+
 ## SSH Manager (sshm)
 
 The repository includes an `sshm` utility for managing SSH connections.
