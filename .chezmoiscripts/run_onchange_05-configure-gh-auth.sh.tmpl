@@ -1,15 +1,9 @@
 #!/bin/sh
-# run_onchange_05-configure-gh-auth — authenticate GitHub CLI if not already logged in
-# macOS only: gh is not installed on Linux machines
+# run_onchange_05-configure-gh-auth — authenticate GitHub CLI if available
 
 set -eu
 
-{{ if ne .chezmoi.os "darwin" -}}
-exit 0
-{{ end -}}
-
 if ! command -v gh >/dev/null 2>&1; then
-    echo "gh not found, skipping auth setup"
     exit 0
 fi
 
