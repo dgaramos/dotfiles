@@ -32,16 +32,24 @@ install_starship() {
     fi
 }
 
+install_gh() {
+    if ! command -v gh >/dev/null 2>&1; then
+        curl -sS https://webi.sh/gh | sh
+    fi
+}
+
 if command -v brew >/dev/null 2>&1; then
-    install_brew fzf zoxide ripgrep fd bat eza direnv delta starship
+    install_brew fzf zoxide ripgrep fd bat eza direnv delta starship gh
 elif command -v apt >/dev/null 2>&1; then
     install_apt fzf ripgrep fd-find bat direnv delta
     install_apt zoxide
     install_apt eza
     install_starship
+    install_gh
 elif command -v dnf >/dev/null 2>&1; then
     install_dnf fzf zoxide ripgrep fd-find bat eza direnv git-delta
     install_starship
+    install_gh
 elif command -v pacman >/dev/null 2>&1; then
-    install_pacman fzf zoxide ripgrep fd bat eza direnv delta starship
+    install_pacman fzf zoxide ripgrep fd bat eza direnv delta starship github-cli
 fi
