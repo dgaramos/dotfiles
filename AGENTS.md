@@ -117,72 +117,24 @@ Aliases in chezmoi-managed zsh files must only reference:
 
 Never alias external services or application-specific commands (e.g. `open-webui`, `nginx`, app-specific CLIs) in the repo. Those belong in `~/.config/zsh/local.zsh` on the specific machine. The `check-dotfiles` scanner enforces this automatically.
 
-### localz
+### Custom tools
 
-The `localz` utility manages `~/.config/zsh/local.zsh`.
+Custom CLI utilities live in `tools/`. Each has its own `README.md`, `CLAUDE.md`, and `AGENTS.md`.
 
-Source: `dot_local/bin/executable_localz`
-Installed: `~/.local/bin/localz`
+| Tool | Source | Installed |
+|---|---|---|
+| `sshm` | `tools/sshm/` | `~/.local/bin/sshm` |
+| `local-env` | `tools/local-env/` | `~/.local/bin/local-env` |
+| `localz` | `tools/localz/` | `~/.local/bin/localz` |
+| `check-dotfiles` | `tools/check-dotfiles/` | `~/.local/bin/check-dotfiles` |
 
-```text
-localz edit        → open local.zsh in $EDITOR
-localz show        → print local.zsh contents
-localz list        → list aliases and functions
-localz add NAME CMD → append an alias
-```
+Installation is handled by `run_onchange_install-tools.sh.tmpl`. The `tools/` directory is listed in `.chezmoiignore` so chezmoi does not try to map it directly. Bump `tools/.version` after changing any tool binary so the install script re-runs on all machines.
 
-### check-dotfiles
-
-The `check-dotfiles` scanner runs as a pre-commit hook and can also be run manually.
-
-Source: `dot_local/bin/executable_check-dotfiles`
-Installed: `~/.local/bin/check-dotfiles`
-
-```text
-check-dotfiles --staged   → scan staged files (used by pre-commit hook)
-check-dotfiles --all      → scan all tracked files
-check-dotfiles FILE       → scan specific file
-```
-
-**Blocks:** private keys, AWS keys, GitHub tokens, secret assignments, EC2 hostnames, aliases referencing known external services (open-webui, nginx, etc.).
-
-**Warns:** IPv4 addresses, aliases referencing commands not installed by this repository.
-
-To suppress a false positive, add `# check-dotfiles: ignore` to the line.
-
-When adding a new tool to the repo, add it to `REPO_INSTALLED` in the script.
-
-### sshm
-
-The `sshm` utility manages SSH host configuration.
-
-Source: `dot_local/bin/executable_sshm`
-Installed: `~/.local/bin/sshm`
-
-`sshm list` shows configured hosts with their identity files.
-`sshm add` runs an interactive wizard — handles `.pem` files automatically.
-`sshm copy-id <host>` installs a public key and supports `.pem` derivation.
-
-Infrastructure-specific SSH host entries (server IPs, private hostnames) must never be committed to this repository. They live in `~/.ssh/config` on each machine.
+For tool-specific rules, read the `AGENTS.md` inside the relevant `tools/<name>/` directory before editing.
 
 ### Interactive selection menus
 
-When a Python CLI in this repository presents a list of options for the user to choose from, use the `select_interactive` helper rather than numbered prompts. It provides arrow-key navigation and an optional "type a value" escape hatch.
-
-```python
-chosen = select_interactive(
-    options,           # list of strings
-    prompt="Label:",
-    allow_custom=True, # adds "[ informar caminho... ]" as last item
-    custom_label="informar caminho...",
-)
-if chosen is CUSTOM_SENTINEL:
-    value = input("Caminho: ").strip()
-else:
-    value = chosen
-```
-
-The function is defined at the top of `executable_sshm` and should be copied or imported if needed in other utilities. Do not use numbered menus (`1) ... 2) ...`) for list selection in any CLI in this repository.
+Any Python CLI in this repository that presents a list of options must use `select_interactive` — never numbered prompts. See `tools/sshm/CLAUDE.md` for the canonical implementation and usage pattern.
 
 ### Bootstrap scripts
 

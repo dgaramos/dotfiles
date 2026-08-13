@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# installs custom tools from tools/ into ~/.local/bin/
+# re-runs whenever any file under tools/ changes
+#
+# tools version: {{ include "tools/.version" }}
+
+set -euo pipefail
+
+TOOLS_DIR="{{ .chezmoi.sourceDir }}/tools"
+BIN_DIR="$HOME/.local/bin"
+
+mkdir -p "$BIN_DIR"
+
+for bin in "$TOOLS_DIR"/*/bin/*; do
+    [ -f "$bin" ] || continue
+    name="$(basename "$bin")"
+    cp "$bin" "$BIN_DIR/$name"
+    chmod 755 "$BIN_DIR/$name"
+    echo "installed $name"
+done

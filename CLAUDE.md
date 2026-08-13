@@ -41,42 +41,15 @@ Some configuration must remain local to a single machine and outside chezmoi.
 
 ### local-env
 
-Machine-local environment variables are managed through the versioned `local-env` tool.
+Machine-local environment variables are managed through the `local-env` tool.
 
-Source:
+See `tools/local-env/CLAUDE.md` for implementation details.
 
-```text
-dot_local/bin/executable_local-env
-```
-
-Installed path:
-
-```text
-~/.local/bin/local-env
-```
-
-Local runtime state:
+Local runtime state (never managed by chezmoi):
 
 ```text
 ~/.config/local-env/env
 ~/.config/local-env/names
-```
-
-`env` contains the currently configured environment variables.
-
-`names` is an internal registry of variables managed by `local-env`. It allows new shells to clear inherited variables before loading the current environment state.
-
-Neither file is managed by chezmoi and neither file may be committed.
-
-The main commands are:
-
-```text
-local-env set NAME VALUE
-local-env unset NAME
-local-env get NAME
-local-env list
-local-env path
-local-env edit
 ```
 
 ### local.zsh
@@ -93,6 +66,23 @@ Use it for local shell behavior that does not belong in `local-env`.
 
 Never add `local.zsh` to chezmoi.
 
+## Custom Tools
+
+Custom CLI utilities live in `tools/`. Each tool has its own `README.md`, `CLAUDE.md`, and `AGENTS.md` — read those before editing a tool.
+
+| Tool | Source | Installed |
+|---|---|---|
+| `sshm` | `tools/sshm/` | `~/.local/bin/sshm` |
+| `local-env` | `tools/local-env/` | `~/.local/bin/local-env` |
+| `localz` | `tools/localz/` | `~/.local/bin/localz` |
+| `check-dotfiles` | `tools/check-dotfiles/` | `~/.local/bin/check-dotfiles` |
+
+Installation is handled by `run_onchange_install-tools.sh.tmpl`. The `tools/` directory is in `.chezmoiignore`. Bump `tools/.version` after changing any tool binary so the install script re-runs on all machines.
+
+### Interactive selection menus
+
+Any Python CLI that presents a list of options must use `select_interactive` — never numbered prompts. See `tools/sshm/CLAUDE.md` for the canonical implementation.
+
 ## Bootstrap Scripts
 
 Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply`. Execution order is enforced by numeric prefixes — never rename without preserving the order.
@@ -103,6 +93,7 @@ run_once_02-install-homebrew     → installs Homebrew (macOS only)
 run_once_03-install-oh-my-zsh    → installs oh-my-zsh
 run_once_04-install-zsh-plugins  → clones zsh plugins
 run_onchange_install-cli-tools   → installs CLI tools (re-runs when content changes)
+run_onchange_install-tools       → installs custom tools from tools/ (re-runs on version bump)
 ```
 
 `run_once_` scripts are tracked by filename. Renaming causes them to re-run on all machines — acceptable only when scripts are idempotent.
@@ -139,107 +130,6 @@ On apt and dnf systems, `starship` is installed via its official installer since
 Do not replace standard POSIX commands such as `find` or `grep` with incompatible aliases. Use separate convenience aliases such as `ff` and `rgrep`.
 
 Aliases must only reference commands that this repository installs or that are standard system commands available on all supported platforms. Never alias commands for external services or applications not managed here (e.g. `open-webui`, `nginx`, application-specific CLIs). Those belong in `~/.config/zsh/local.zsh` on the specific machine.
-
-## Secret Scanner (check-dotfiles)
-
-The repository includes a `check-dotfiles` scanner installed as a pre-commit hook.
-
-Source:
-
-```text
-dot_local/bin/executable_check-dotfiles
-```
-
-Installed path:
-
-```text
-~/.local/bin/check-dotfiles
-```
-
-The hook runs automatically on every commit. It can also be run manually:
-
-```text
-check-dotfiles --staged   → scan staged files
-check-dotfiles --all      → scan all tracked files
-```
-
-It blocks commits containing secrets, private IPs, EC2 hostnames, and aliases referencing external services not installed by this repository. Add `# check-dotfiles: ignore` to suppress false positives.
-
-## Local Shell Manager (localz)
-
-The repository includes a `localz` utility for managing `~/.config/zsh/local.zsh`.
-
-Source:
-
-```text
-dot_local/bin/executable_localz
-```
-
-Installed path:
-
-```text
-~/.local/bin/localz
-```
-
-The main commands are:
-
-```text
-localz edit           → open local.zsh in $EDITOR
-localz show           → print local.zsh contents
-localz list           → list aliases and functions defined in local.zsh
-localz add NAME CMD   → append an alias to local.zsh
-```
-
-## Interactive Selection Menus
-
-When a Python CLI in this repository presents a list of options, use the `select_interactive` helper — never numbered prompts. It provides arrow-key navigation via `tty`/`termios` (stdlib only) and an optional free-text escape hatch.
-
-```python
-chosen = select_interactive(
-    options,           # list of strings
-    prompt="Label:",
-    allow_custom=True, # appends "[ informar caminho... ]" as last item
-    custom_label="informar caminho...",
-)
-if chosen is CUSTOM_SENTINEL:
-    value = input("Caminho: ").strip()
-else:
-    value = chosen
-```
-
-The canonical implementation lives in `dot_local/bin/executable_sshm`. Copy it into any new utility that needs a selection menu.
-
-## SSH Manager (sshm)
-
-The repository includes an `sshm` utility for managing SSH connections.
-
-Source:
-
-```text
-dot_local/bin/executable_sshm
-```
-
-Installed path:
-
-```text
-~/.local/bin/sshm
-```
-
-The main commands are:
-
-```text
-sshm list                  → show configured SSH hosts (HOST, HOSTNAME, USER, KEY)
-sshm add                   → interactive wizard to add a new SSH host
-sshm edit                  → open ~/.ssh/config in $EDITOR
-sshm copy-id <host>        → install a public key on a remote host
-sshm keygen                → generate a new key pair
-```
-
-`sshm add` handles `.pem` files by copying them to `~/.ssh/`, setting permissions to 400, deriving the public key, and writing the appropriate `~/.ssh/config` block.
-
-`sshm copy-id` accepts `.pem` keys by deriving the public key with `ssh-keygen -y -f`.
-
-Infrastructure-specific SSH aliases (IPs, host names for private servers) must never be committed. Configure them via `sshm add` and keep them in `~/.ssh/config` locally.
 
 ## Secrets
 
