@@ -112,7 +112,7 @@ BLOCK_PATTERNS = [
     ),
     (
         "github-token",
-        re.compile(r"\bgh[pousr]_[0-9a-zA-Z]{36}\b"),
+        re.compile(r"\bgh[pousr]_[0-9a-zA-Z]{36,}\b"),
         "GitHub personal access token",
     ),
     (
@@ -124,7 +124,7 @@ BLOCK_PATTERNS = [
     ),
     (
         "ec2-hostname",
-        re.compile(r"\bec2-\d+-\d+-\d+-\d+\.compute\.amazonaws\.com\b"),
+        re.compile(r"\bec2-\d+-\d+-\d+-\d+\.compute[\w.-]*\.amazonaws\.com\b"),
         "EC2 public DNS hostname",
     ),
 ]
