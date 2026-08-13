@@ -69,7 +69,7 @@ def test_cmd_list_shows_host(capsys):
 def test_cmd_list_multiple_hosts(capsys):
     sshm.SSH_CONFIG.write_text(
         "Host alpha\n    HostName 10.0.0.1\n    User root\n\n"
-        "Host beta\n    HostName 10.0.0.2\n    User admin\n"
+        "Host beta\n    HostName 10.0.0.2\n    User admin\n"  # check-dotfiles: ignore
     )
     sshm.cmd_list([])
     out = capsys.readouterr().out
