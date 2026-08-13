@@ -5,7 +5,7 @@
 ![chezmoi](https://img.shields.io/badge/chezmoi-dotfiles-blue)
 ![shell](https://img.shields.io/badge/shell-zsh-green)
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20EC2-lightgrey)
-[![codecov](https://codecov.io/gh/dgaramos/dotfiles/graph/badge.svg)](https://codecov.io/gh/dgaramos/dotfiles)
+
 
 </p>
 
