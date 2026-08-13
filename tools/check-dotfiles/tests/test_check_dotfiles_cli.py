@@ -42,7 +42,7 @@ def test_main_explicit_blocked_file(tmp_path, monkeypatch, capsys):
 def test_main_explicit_warn_file(tmp_path, monkeypatch, capsys):
     # IPv4 address triggers a warning
     f = tmp_path / "warn.zsh"
-    f.write_text("ssh 192.168.1.100\n")
+    f.write_text("ssh 192.168.1.100\n")  # check-dotfiles: ignore
     monkeypatch.setattr(sys, "argv", ["check-dotfiles", str(f)])
     with pytest.raises(SystemExit) as exc:
         cd.main()
