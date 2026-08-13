@@ -19,12 +19,13 @@ This repository provides a portable developer workstation setup with shared shel
 - Automated CLI installation
 - Machine/profile separation
 - Machine-local configuration via `local-env` and `local.zsh`
-- Secret scanner pre-commit hook
+- Secret scanner pre-commit hook (`check-dotfiles`)
 - SSH manager (`sshm`)
 - Local shell manager (`localz`)
 - Git identity managed per-machine via `local-env`
 - bat and delta pre-configured
 - Secret-safe — never commits credentials or private references
+- Test suite for all custom tools
 
 ## Supported Machines
 
@@ -42,21 +43,21 @@ This repository provides a portable developer workstation setup with shared shel
 .
 ├── .chezmoi.yaml.tmpl
 ├── .chezmoiscripts/
+├── .chezmoiignore
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── README.md
-├── dot_local/
-│   └── bin/
-│       ├── executable_check-dotfiles
-│       ├── executable_local-env
-│       ├── executable_localz
-│       └── executable_sshm
+├── requirements-dev.txt
+├── tests/                          ← integration tests (repo structure, shell syntax)
+├── tools/                          ← custom CLI utilities
+│   ├── check-dotfiles/
+│   ├── local-env/
+│   ├── localz/
+│   └── sshm/
 ├── dot_zshrc.tmpl
 └── private_dot_config/
-    ├── bat/
-    │   └── config
-    ├── delta/
-    │   └── config
+    ├── bat/config
+    ├── delta/config
     ├── starship.toml
     └── zsh/
         ├── common.zsh
@@ -70,9 +71,9 @@ This repository provides a portable developer workstation setup with shared shel
             └── ec2.zsh
 ```
 
-## Configuration Model
+Each tool under `tools/` has its own `bin/`, `README.md`, `CLAUDE.md`, and `AGENTS.md`.
 
-Configuration is split into layers.
+## Configuration Model
 
 ```text
 .zshrc
@@ -88,22 +89,20 @@ Configuration is split into layers.
     └── ec2.zsh
 ```
 
-Shared behavior belongs in `common.zsh`.
-
-Profile-specific behavior belongs in:
-
-```text
-personal.zsh
-work.zsh
-```
-
-Machine-specific behavior belongs in the corresponding file under:
-
-```text
-~/.config/zsh/hosts/
-```
+Shared behavior belongs in `common.zsh`. Profile-specific in `personal.zsh` / `work.zsh`. Machine-specific in the corresponding host file.
 
 Machine-local configuration that must not be synchronized is kept outside chezmoi.
+
+## Custom Tools
+
+| Tool | Description |
+|---|---|
+| `sshm` | Manage SSH hosts — add, list, copy keys, generate key pairs |
+| `local-env` | Machine-local environment variables, outside chezmoi |
+| `localz` | Manage `~/.config/zsh/local.zsh` |
+| `check-dotfiles` | Secret scanner, runs as pre-commit hook |
+
+Installed to `~/.local/bin/` via `run_onchange_install-tools.sh.tmpl`. See each tool's `README.md` for usage.
 
 ## Tooling
 
@@ -120,62 +119,31 @@ Machine-local configuration that must not be synchronized is kept outside chezmo
 
 ### Search
 
-- ripgrep
-- fd
+- ripgrep (`rgrep` alias)
+- fd (`ff` alias)
 
-Aliases:
-
-```text
-ff     -> fd / fdfind
-rgrep  -> ripgrep
-```
-
-POSIX commands such as `find` and `grep` are intentionally not replaced because shell tools and development SDKs may depend on their standard behavior.
+POSIX `find` and `grep` are not replaced — shell tools and SDKs may depend on their standard behavior.
 
 ### File Viewing
 
-- bat
-- eza
-
-Aliases:
-
-```text
-cat   -> bat / batcat
-ll    -> eza -lah
-tree  -> eza --tree
-```
+- bat (`cat` alias)
+- eza (`ll`, `tree` aliases)
 
 ### Git
 
-Git output is enhanced with `git-delta`.
-
-Features include:
-
-- delta pager
-- side-by-side diffs
-- diff navigation
-
-### Development
-
-Depending on the machine:
-
-- direnv
-- SDKMAN
-- NVM
-- Java helpers
-- Claude Code helpers
+- git-delta (side-by-side diffs, navigation)
 
 ## Installation
 
 ### Prerequisites
 
-The prompt uses [Starship](https://starship.rs) with icons that require a [Nerd Font](https://www.nerdfonts.com) installed in your terminal emulator. On macOS, install one with:
+The prompt uses [Starship](https://starship.rs) with icons that require a [Nerd Font](https://www.nerdfonts.com) in your terminal. On macOS:
 
 ```bash
 brew install --cask font-jetbrains-mono-nerd-font
 ```
 
-Then set it as the font in your terminal preferences. On remote machines (EC2, homelab) the font must be installed on the **client** machine, not the server.
+On remote machines (EC2, homelab) the font must be installed on the **client**, not the server.
 
 ### macOS
 
@@ -187,19 +155,15 @@ chezmoi apply
 
 ### Linux (one-liner)
 
-Installs chezmoi and applies the dotfiles in a single command — no GitHub login required:
-
 ```bash
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <repository>
 ```
-
-Replace `<repository>` with the GitHub repository URL or `owner/repo` shorthand.
 
 When prompted, enter the profile (`personal` or `work`) and role (`mac`, `work-mac`, `homelab`, `steamdeck`, or `ec2`).
 
 ### EC2 (Amazon Linux, Graviton/ARM64)
 
-The one-liner installer may be unavailable. If `get.chezmoi.io` returns a 503, install chezmoi directly from GitHub — and install to a permanent path, not `/tmp`, which is cleared between sessions:
+If `get.chezmoi.io` returns a 503, install chezmoi directly from GitHub:
 
 ```bash
 curl -fLo /tmp/chezmoi.tar.gz https://github.com/twpayne/chezmoi/releases/download/v2.72.0/chezmoi_2.72.0_linux_arm64.tar.gz \
@@ -211,32 +175,19 @@ curl -fLo /tmp/chezmoi.tar.gz https://github.com/twpayne/chezmoi/releases/downlo
 
 When prompted, enter profile `work` and role `ec2`.
 
-After applying, reload the shell:
-
-```bash
-exec zsh
-```
-
 #### Known issues
 
 | Problem | Cause | Fix |
 |---|---|---|
 | `get.chezmoi.io` returns 503 | Installer service unavailable | Use the direct GitHub release above |
-| `multiple config file templates` | Legacy `.chezmoi.toml.tmpl` present in source | `rm ~/.local/share/chezmoi/.chezmoi.toml.tmpl` then re-run init |
+| `multiple config file templates` | Legacy `.chezmoi.toml.tmpl` in source | `rm ~/.local/share/chezmoi/.chezmoi.toml.tmpl` then re-run |
 | `multiple config files` | `.chezmoi.toml` and `.chezmoi.yaml` coexist | `rm ~/.config/chezmoi/chezmoi.toml` then `chezmoi apply` |
 | `chsh: command not found` | Amazon Linux omits `chsh` by default | `sudo dnf install -y util-linux-user` |
-| `zsh: command not found` after apply | chezmoi installed manually skips bootstrap scripts | `sudo dnf install -y zsh` then `chezmoi apply` |
-
-### Review changes
-
-```bash
-chezmoi diff
-chezmoi status
-```
+| `zsh: command not found` after apply | chezmoi installed manually skips bootstrap | `sudo dnf install -y zsh` then `chezmoi apply` |
 
 ## Bootstrap Scripts
 
-Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply` in alphabetical order. Numeric prefixes enforce the correct sequence:
+Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply`:
 
 ```text
 01-install-zsh          → installs zsh + sets as default shell (Linux only)
@@ -244,317 +195,51 @@ Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply` in alphab
 03-install-oh-my-zsh    → installs oh-my-zsh
 04-install-zsh-plugins  → clones zsh plugins
 05-configure-gh-auth    → authenticates gh if available
-06-configure-git        → macOS only: sets git identity, wires delta config
+06-configure-git        → sets git identity, wires delta config (macOS)
 install-cli-tools       → installs CLI tools (re-runs when content changes)
 install-git-hooks       → installs pre-commit scanner hook
+install-tools           → installs custom tools from tools/ (re-runs on version bump)
 ```
 
-All scripts are idempotent — safe to re-run on machines where dependencies are already installed.
-
-## CLI Bootstrap
-
-CLI tools are installed through chezmoi scripts.
-
-Currently managed tools include:
-
-- fzf
-- zoxide
-- ripgrep
-- fd
-- bat
-- eza
-- direnv
-- delta
-- starship
-- gh
-
-Package names are adapted when necessary for each platform.
-
-### Debian
-
-Some Debian packages use different executable names:
-
-| Tool | Debian executable |
-|---|---|
-| `fd` | `fdfind` |
-| `bat` | `batcat` |
-
-The shell configuration handles these differences automatically.
-
-### Amazon Linux (EC2)
-
-Some tools use different package names on Amazon Linux:
-
-| Tool | Package name |
-|---|---|
-| `fd` | `fd-find` |
-| `delta` | `git-delta` |
-
-The shell configuration handles these differences automatically.
-
-### Steam Deck
-
-SteamOS uses a read-only filesystem by default.
-
-Package installation may require manually disabling read-only mode:
-
-```bash
-sudo steamos-readonly disable
-```
-
-This is intentionally not automated by the dotfiles.
+All scripts are idempotent.
 
 ## Machine-local Configuration
 
-Some configuration belongs to a specific machine and should never be managed by chezmoi or committed to Git.
-
-The shared `common.zsh` supports two machine-local mechanisms:
-
 ```text
 common.zsh
-├── local-env
-│   └── machine-local environment variables
-└── ~/.config/zsh/local.zsh
-    └── other machine-local shell configuration
+├── local-env       → machine-local environment variables
+└── local.zsh       → other machine-local shell configuration
 ```
 
-Use `local-env` for environment variables.
+Use `local-env` for environment variables. Use `~/.config/zsh/local.zsh` as a generic escape hatch for local shell behavior.
 
-Use `~/.config/zsh/local.zsh` only as a generic escape hatch for local shell behavior that does not belong in the managed configuration.
+Neither file is managed by chezmoi or committed.
 
-Examples include:
-
-- local aliases
-- temporary shell initialization
-- machine-specific functions
-- dynamic integrations that should remain local
-
-Create it with:
+## Testing
 
 ```bash
-mkdir -p ~/.config/zsh
-touch ~/.config/zsh/local.zsh
-chmod 600 ~/.config/zsh/local.zsh
+pip install pytest   # or: brew install pytest
+pytest tools/ tests/ -v
 ```
 
-The file is loaded automatically by `common.zsh` when present.
-
-> [!IMPORTANT]
-> `~/.config/zsh/local.zsh` is intentionally not managed by chezmoi and must never be committed to this repository.
-
-## local-env
-
-The repository includes a `local-env` utility for managing machine-local environment variables.
-
-It is versioned in:
-
-```text
-dot_local/bin/executable_local-env
-```
-
-and installed by chezmoi as:
-
-```text
-~/.local/bin/local-env
-```
-
-Only the tool is versioned. The values it manages remain local to each machine.
-
-### Storage
-
-`local-env` uses:
-
-```text
-~/.config/local-env/
-├── env
-└── names
-```
-
-`env` contains the currently configured environment variables.
-
-Example:
-
-```bash
-# Managed by local-env.
-# Machine-local values. Do not commit this file.
-
-export API_URL=https://example.com
-export PROJECT_NAME='My Project'
-```
-
-`names` is an internal registry of environment variable names that have been managed by `local-env`.
-
-For example:
-
-```text
-API_URL
-PROJECT_NAME
-```
-
-The registry is necessary because environment variables are inherited by child processes.
-
-When a new shell starts, `common.zsh`:
-
-1. reads `names`;
-2. clears those variables from the inherited environment;
-3. loads the current values from `env`;
-4. loads `local.zsh` afterwards.
-
-This means removing a variable with `local-env unset` also removes it correctly from subsequent shells without storing `unset VARIABLE` entries inside `env`.
-
-Both files are machine-local runtime state and must never be added to chezmoi or committed.
-
-### Commands
-
-Set a value:
-
-```bash
-local-env set API_URL https://example.com
-```
-
-Set a value containing spaces:
-
-```bash
-local-env set PROJECT_NAME "My Project"
-```
-
-Read a value:
-
-```bash
-local-env get API_URL
-```
-
-List configured variable names:
-
-```bash
-local-env list
-```
-
-Remove a variable:
-
-```bash
-local-env unset API_URL
-```
-
-Show the storage path:
-
-```bash
-local-env path
-```
-
-Edit the environment file directly:
-
-```bash
-local-env edit
-```
-
-Show help:
-
-```bash
-local-env --help
-```
-
-### Machine isolation
-
-Each machine has independent runtime state:
-
-```text
-dotfiles repository
-└── local-env
-        |
-        ├── Personal Mac
-        │   └── ~/.config/local-env/
-        │       ├── env
-        │       └── names
-        |
-        ├── Work Mac
-        │   └── ~/.config/local-env/
-        │       ├── env
-        │       └── names
-        |
-        ├── Homelab
-        │   └── ~/.config/local-env/
-        │       ├── env
-        │       └── names
-        |
-        ├── Steam Deck
-        │   └── ~/.config/local-env/
-        │       ├── env
-        │       └── names
-        |
-        └── EC2
-            └── ~/.config/local-env/
-                ├── env
-                └── names
-```
-
-The dotfiles synchronize the mechanism, not the machine-local values.
+76 tests covering all custom tools, repo structure consistency, and zsh file syntax.
 
 ## Secrets
 
-This repository must contain no secrets.
-
-Never commit:
-
-- API tokens
-- passwords
-- credentials
-- private keys
-- secret environment files
-- authentication material
-
-Machine-local values should remain outside chezmoi.
-
-When possible, credentials should be retrieved from local credential stores or authenticated CLI tools instead of being written directly into files.
+Never commit tokens, passwords, credentials, private keys, or authentication material. Machine-local values stay outside chezmoi. The `check-dotfiles` pre-commit hook enforces this automatically.
 
 ## Git Workflow
 
-Commits use Conventional Commits.
+Conventional Commits — `type(scope): description`.
 
-Format:
-
-```text
-type(scope): description
-```
-
-Examples:
-
-```text
-feat(zsh): add machine-local environment manager
-fix(zsh): clear inherited local environment variables
-docs(readme): document local environment management
-refactor(zsh): simplify local configuration
-chore(repo): update metadata
-```
-
-Allowed types:
-
-- `feat`
-- `fix`
-- `docs`
-- `refactor`
-- `chore`
-- `test`
-- `build`
-- `ci`
+Allowed types: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `build`, `ci`.
 
 Before committing:
 
 ```bash
-git diff
-git status
-chezmoi diff
+git diff && git status && chezmoi diff
+pytest tools/ tests/
 ```
-
-Keep commits small and focused.
-
-## Roadmap
-
-- Add secret-provider support
-- Improve bootstrap validation
-- Add automated checks
-- Expand workstation automation
-- Document recovery procedures
 
 ## License
 

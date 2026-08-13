@@ -17,18 +17,14 @@ passarem. Testar os dois lados ao modificar padrões.
 Após qualquer mudança:
 
 ```bash
+pytest tools/check-dotfiles/tests/ -v
 chezmoi apply
 check-dotfiles --all        # não deve ter falsos positivos no repo
 ```
 
-Para novos padrões de bloqueio, testar também com um arquivo temporário contendo
-o padrão esperado:
-
-```bash
-echo 'alias x="open-webui start"' > /tmp/test.zsh
-check-dotfiles /tmp/test.zsh   # deve bloquear
-rm /tmp/test.zsh
-```
+Para novos padrões de bloqueio, adicionar um teste em `tests/test_block_patterns.py`
+com `# check-dotfiles: ignore` na linha do padrão de teste. Não testar apenas
+manualmente — o padrão precisa ter cobertura na suite.
 
 ## Suprimindo falsos positivos no repo
 

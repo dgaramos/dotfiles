@@ -182,11 +182,24 @@ Allowed types:
 
 Commit descriptions should be concise, imperative, and written in English.
 
+## Testing
+
+Run the full test suite before committing:
+
+```bash
+pytest tools/ tests/ -v
+```
+
+76 tests cover all custom tools (unit), repo structure consistency, and zsh file syntax (integration). A failing test is a blocker.
+
+To install pytest: `brew install pytest` (macOS) or `pip install pytest`.
+
 ## Validation
 
 Before committing:
 
 ```bash
+pytest tools/ tests/
 git diff
 git status
 chezmoi diff

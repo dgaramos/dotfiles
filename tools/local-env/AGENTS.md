@@ -14,6 +14,7 @@ a inicialização de todos os shells na máquina.
 ## Validação obrigatória
 
 ```bash
+pytest tools/local-env/tests/ -v
 chezmoi apply
 
 local-env set TEST_LOCAL_ENV "hello world"

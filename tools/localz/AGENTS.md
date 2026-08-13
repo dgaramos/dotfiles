@@ -13,6 +13,7 @@ gerenciado pelo chezmoi.
 ## Validação obrigatória
 
 ```bash
+pytest tools/localz/tests/ -v
 chezmoi apply
 localz --help               # deve imprimir sem erro
 localz add TEST_ALIAS 'echo test'

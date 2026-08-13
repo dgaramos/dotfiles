@@ -16,6 +16,7 @@ conexões SSH da máquina. Testar com cuidado antes de commitar.
 Após qualquer mudança:
 
 ```bash
+pytest tools/sshm/tests/ -v
 chezmoi apply
 sshm list           # hosts existentes devem continuar aparecendo
 sshm --help         # help deve imprimir sem erro

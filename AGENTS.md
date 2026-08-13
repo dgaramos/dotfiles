@@ -194,11 +194,24 @@ Allowed types:
 
 Use concise English imperative descriptions.
 
+### Tests
+
+Run the full test suite before committing:
+
+```bash
+pytest tools/ tests/ -v
+```
+
+To install pytest: `brew install pytest` (macOS) or `pip install pytest`.
+
+Tests cover all custom tools, repo structure consistency, and zsh file syntax. A failing test is a blocker — do not commit with broken tests.
+
 ### Validation
 
 Before committing:
 
 ```bash
+pytest tools/ tests/
 git diff
 git status
 chezmoi diff
