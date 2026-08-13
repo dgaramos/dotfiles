@@ -165,6 +165,25 @@ Installed: `~/.local/bin/sshm`
 
 Infrastructure-specific SSH host entries (server IPs, private hostnames) must never be committed to this repository. They live in `~/.ssh/config` on each machine.
 
+### Interactive selection menus
+
+When a Python CLI in this repository presents a list of options for the user to choose from, use the `select_interactive` helper rather than numbered prompts. It provides arrow-key navigation and an optional "type a value" escape hatch.
+
+```python
+chosen = select_interactive(
+    options,           # list of strings
+    prompt="Label:",
+    allow_custom=True, # adds "[ informar caminho... ]" as last item
+    custom_label="informar caminho...",
+)
+if chosen is CUSTOM_SENTINEL:
+    value = input("Caminho: ").strip()
+else:
+    value = chosen
+```
+
+The function is defined at the top of `executable_sshm` and should be copied or imported if needed in other utilities. Do not use numbered menus (`1) ... 2) ...`) for list selection in any CLI in this repository.
+
 ### Bootstrap scripts
 
 Scripts in `.chezmoiscripts/` run in alphabetical order. Numeric prefixes enforce the correct sequence — do not rename without preserving order:

@@ -190,6 +190,25 @@ localz list           → list aliases and functions defined in local.zsh
 localz add NAME CMD   → append an alias to local.zsh
 ```
 
+## Interactive Selection Menus
+
+When a Python CLI in this repository presents a list of options, use the `select_interactive` helper — never numbered prompts. It provides arrow-key navigation via `tty`/`termios` (stdlib only) and an optional free-text escape hatch.
+
+```python
+chosen = select_interactive(
+    options,           # list of strings
+    prompt="Label:",
+    allow_custom=True, # appends "[ informar caminho... ]" as last item
+    custom_label="informar caminho...",
+)
+if chosen is CUSTOM_SENTINEL:
+    value = input("Caminho: ").strip()
+else:
+    value = chosen
+```
+
+The canonical implementation lives in `dot_local/bin/executable_sshm`. Copy it into any new utility that needs a selection menu.
+
 ## SSH Manager (sshm)
 
 The repository includes an `sshm` utility for managing SSH connections.

@@ -5,10 +5,73 @@ import re
 import shutil
 import subprocess
 import sys
+import termios
+import tty
 from pathlib import Path
 
 SSH_DIR = Path.home() / ".ssh"
 SSH_CONFIG = SSH_DIR / "config"
+
+
+# ---------------------------------------------------------------------------
+# Interactive selection
+# ---------------------------------------------------------------------------
+
+CUSTOM_SENTINEL = object()
+
+
+def select_interactive(options, prompt="Selecione", allow_custom=False, custom_label="digitar caminho..."):
+    """Arrow-key menu. Returns the selected item, or CUSTOM_SENTINEL if allow_custom and user chose to type."""
+    items = list(options)
+    if allow_custom:
+        items.append(f"[ {custom_label} ]")
+
+    idx = 0
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+
+    def render(current):
+        for i, item in enumerate(items):
+            prefix = "  > " if i == current else "    "
+            print(f"{prefix}{item}")
+
+    def clear(n):
+        for _ in range(n):
+            sys.stdout.write("\x1b[1A\x1b[2K")
+
+    print(prompt)
+    render(idx)
+
+    try:
+        tty.setraw(fd)
+        while True:
+            ch = sys.stdin.read(1)
+            if ch == "\x1b":
+                ch2 = sys.stdin.read(1)
+                ch3 = sys.stdin.read(1)
+                if ch2 == "[":
+                    if ch3 == "A" and idx > 0:
+                        clear(len(items))
+                        idx -= 1
+                        render(idx)
+                    elif ch3 == "B" and idx < len(items) - 1:
+                        clear(len(items))
+                        idx += 1
+                        render(idx)
+            elif ch in ("\r", "\n"):
+                break
+            elif ch in ("\x03", "\x04"):
+                raise KeyboardInterrupt
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+    clear(len(items))
+    selected = items[idx]
+    print(f"  > {selected}")
+
+    if allow_custom and idx == len(items) - 1:
+        return CUSTOM_SENTINEL
+    return options[idx]
 
 
 # ---------------------------------------------------------------------------
@@ -163,36 +226,31 @@ def cmd_add(args):
     user = input("Usuário [ec2-user]: ").strip() or "ec2-user"
     port = input("Porta [22]: ").strip() or "22"
 
-    print("\nChave SSH:")
-    print("  1) Usar chave existente em ~/.ssh/")
-    print("  2) Informar caminho de um .pem")
-    key_choice = input("> ").strip()
+    available = sorted(SSH_DIR.glob("*.pem")) + sorted(
+        f for f in SSH_DIR.iterdir()
+        if f.suffix == "" and (SSH_DIR / (f.name + ".pub")).exists()
+    )
 
     identity_file = None
 
-    if key_choice == "1":
-        available = sorted(SSH_DIR.glob("*.pem")) + sorted(
-            f for f in SSH_DIR.iterdir()
-            if f.suffix == "" and (SSH_DIR / (f.name + ".pub")).exists()
-        )
-        if not available:
-            raise SystemExit("Nenhuma chave encontrada em ~/.ssh/")
-        print("\nChaves disponíveis:")
-        for i, k in enumerate(available, 1):
-            print(f"  {i}) {k.name}")
-        idx = input("> ").strip()
-        try:
-            identity_file = available[int(idx) - 1]
-        except (ValueError, IndexError):
-            raise SystemExit("Seleção inválida.")
-
-    elif key_choice == "2":
-        pem_input = input("Caminho do .pem: ").strip()
+    if not available:
+        pem_input = input("\nNenhuma chave em ~/.ssh/. Caminho do .pem: ").strip()
         identity_file = install_pem(pem_input)
-        print(f"Chave copiada para {identity_file} com permissão 400.")
-
+        print(f"Chave instalada em {identity_file} com permissão 400.")
     else:
-        raise SystemExit("Opção inválida.")
+        chosen = select_interactive(
+            [k.name for k in available],
+            prompt="\nChave SSH:",
+            allow_custom=True,
+            custom_label="informar caminho...",
+        )
+        if chosen is CUSTOM_SENTINEL:
+            pem_input = input("Caminho do .pem: ").strip()
+            identity_file = install_pem(pem_input)
+            if identity_file not in available:
+                print(f"Chave instalada em {identity_file} com permissão 400.")
+        else:
+            identity_file = SSH_DIR / chosen
 
     block_lines = [
         f"Host {alias}",
