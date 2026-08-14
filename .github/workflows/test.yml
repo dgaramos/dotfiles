@@ -22,7 +22,13 @@ jobs:
         run: pip install pytest pytest-cov
 
       - name: Run tests
-        run: pytest tools/ tests/ -v --cov --cov-report=xml
+        run: pytest tools/ tests/ -v --cov --cov-report=xml --junit-xml=junit.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          files: junit.xml
