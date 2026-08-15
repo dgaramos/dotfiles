@@ -94,6 +94,7 @@ run_once_02-install-homebrew     → installs Homebrew (macOS only)
 run_once_03-install-oh-my-zsh    → installs oh-my-zsh
 run_once_04-install-zsh-plugins  → clones zsh plugins
 run_once_05-install-tpm          → clones TPM into ~/.tmux/plugins/tpm
+run_once_06-install-fonts        → installs FiraCode Nerd Font (macOS: brew cask; Linux: GitHub Releases)
 run_onchange_install-cli-tools   → installs CLI tools (re-runs when content changes)
 run_onchange_install-tools       → installs custom tools from tools/ (re-runs on version bump)
 ```
@@ -133,6 +134,34 @@ On apt and dnf systems, `starship` is installed via its official installer since
 Do not replace standard POSIX commands such as `find` or `grep` with incompatible aliases. Use separate convenience aliases such as `ff` and `rgrep`.
 
 Aliases must only reference commands that this repository installs or that are standard system commands available on all supported platforms. Never alias commands for external services or applications not managed here (e.g. `open-webui`, `nginx`, application-specific CLIs). Those belong in `~/.config/zsh/local.zsh` on the specific machine.
+
+## Fonts & Terminal
+
+### FiraCode Nerd Font
+
+Installed automatically by `run_once_06-install-fonts.sh.tmpl`:
+
+- **macOS**: `brew install --cask font-fira-code-nerd-font`
+- **Linux**: downloaded from the `ryanoasis/nerd-fonts` GitHub Releases as `FiraCode.zip`, extracted to `~/.local/share/fonts/`, and registered with `fc-cache`
+
+The script is idempotent — it skips installation if the font files are already present.
+
+### iTerm2 Dynamic Profile
+
+The file at:
+
+```text
+Library/Application Support/iTerm2/DynamicProfiles/dotfiles.json
+```
+
+is managed by chezmoi and deployed to `~/Library/Application Support/iTerm2/DynamicProfiles/`. iTerm2 loads it automatically — no manual import needed.
+
+The profile named **dotfiles** sets:
+
+- Font: FiraCode Nerd Font Mono 13
+- Ligatures: enabled
+
+To activate it in iTerm2: Profiles → select **dotfiles** → Set as Default.
 
 ## Secrets
 

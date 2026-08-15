@@ -151,11 +151,9 @@ POSIX `find` and `grep` are not replaced — shell tools and SDKs may depend on 
 
 ### Prerequisites
 
-The prompt uses [Starship](https://starship.rs) with icons that require a [Nerd Font](https://www.nerdfonts.com) in your terminal. On macOS:
+The prompt uses [Starship](https://starship.rs) with icons that require a Nerd Font in your terminal.
 
-```bash
-brew install --cask font-jetbrains-mono-nerd-font
-```
+**FiraCode Nerd Font is installed automatically** by `chezmoi apply` on both macOS and Linux. No manual step needed on managed machines.
 
 On remote machines (EC2, homelab) the font must be installed on the **client**, not the server.
 
@@ -209,7 +207,8 @@ Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply`:
 03-install-oh-my-zsh    → installs oh-my-zsh
 04-install-zsh-plugins  → clones zsh plugins
 05-install-tpm          → clones TPM into ~/.tmux/plugins/tpm
-06-configure-gh-auth    → authenticates gh if available
+06-install-fonts        → installs FiraCode Nerd Font (macOS: brew cask; Linux: GitHub Releases)
+07-configure-gh-auth    → authenticates gh if available
 07-configure-git        → sets git identity, wires delta config (macOS)
 install-cli-tools       → installs CLI tools (re-runs when content changes)
 install-git-hooks       → installs pre-commit scanner hook
