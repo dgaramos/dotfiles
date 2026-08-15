@@ -17,36 +17,36 @@ setopt SHARE_HISTORY
 setopt INC_APPEND_HISTORY
 
 # Navigation
-alias c='clear'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
+alias c='clear'                # clear the terminal
+alias ..='cd ..'               # go up one directory
+alias ...='cd ../..'           # go up two directories
+alias ....='cd ../../..'       # go up three directories
 
 # Git
-alias gs='git status'
-alias ga='git add'
-alias gc='git commit'
-alias gp='git push'
-alias gl='git pull'
-alias gd='git diff'
-alias gb='git branch'
-alias gco='git checkout'
+alias gs='git status'          # show working tree status
+alias ga='git add'             # stage files
+alias gc='git commit'          # create a commit
+alias gp='git push'            # push to remote
+alias gl='git pull'            # pull from remote
+alias gd='git diff'            # show unstaged changes
+alias gb='git branch'          # list or create branches
+alias gco='git checkout'       # switch branch or restore files
 
 # GitHub CLI
 if command -v gh >/dev/null 2>&1; then
-    alias prs='gh pr list'
-    alias mypr='gh pr list --author=@me'
-    alias prv='gh pr view'
-    alias issues='gh issue list'
+    alias prs='gh pr list'             # list open PRs
+    alias mypr='gh pr list --author=@me'  # list my open PRs
+    alias prv='gh pr view'             # view a PR
+    alias issues='gh issue list'       # list open issues
 fi
 
 # Chezmoi
-alias cz='chezmoi'
-alias czd='chezmoi diff'
-alias cza='chezmoi apply'
-alias czu='chezmoi update'
-alias cze='chezmoi edit'
-alias zshr='exec zsh'
+alias cz='chezmoi'             # chezmoi root command
+alias czd='chezmoi diff'       # show pending changes
+alias cza='chezmoi apply'      # apply dotfiles to home
+alias czu='chezmoi update'     # pull + apply from remote
+alias cze='chezmoi edit'       # edit a managed file
+alias zshr='exec zsh'          # reload zsh shell
 
 if command -v starship >/dev/null 2>&1; then
     eval "$(starship init zsh)"
@@ -57,26 +57,26 @@ fi
 # ============================================================
 
 if command -v eza >/dev/null 2>&1; then
-    alias ls='eza'
-    alias ll='eza -lah --icons'
-    alias la='eza -la --icons'
-    alias tree='eza --tree --icons'
+    alias ls='eza'                      # list files
+    alias ll='eza -lah --icons'         # long list with hidden files
+    alias la='eza -la --icons'          # long list
+    alias tree='eza --tree --icons'     # directory tree
 fi
 
 if command -v bat >/dev/null 2>&1; then
-    alias cat='bat'
+    alias cat='bat'                     # pager with syntax highlight
 elif command -v batcat >/dev/null 2>&1; then
-    alias cat='batcat'
+    alias cat='batcat'                  # pager with syntax highlight (Debian)
 fi
 
 if command -v rg >/dev/null 2>&1; then
-    alias rgrep='rg'
+    alias rgrep='rg'                    # fast recursive grep
 fi
 
 if command -v fd >/dev/null 2>&1; then
-    alias ff='fd'
+    alias ff='fd'                       # fast file finder
 elif command -v fdfind >/dev/null 2>&1; then
-    alias ff='fdfind'
+    alias ff='fdfind'                   # fast file finder (Debian)
 fi
 
 # FZF
@@ -164,12 +164,28 @@ fi
 
 # tmux
 if command -v tmux >/dev/null 2>&1; then
-    # attach to named session or create it (default: main)
-    tm() { tmux new-session -A -s "${1:-main}" }
-    alias tls='tmux ls'
-    alias tks='tmux kill-session -t'
-    alias td='tmux detach'
+    tm() { tmux new-session -A -s "${1:-main}" }  # attach or create session (default: main)
+    alias tls='tmux ls'              # list sessions
+    alias tks='tmux kill-session -t' # kill named session
+    alias td='tmux detach'           # detach from current session
 fi
+
+# aliases [keyword] — list dotfile aliases, optionally filtered by keyword
+aliases() {
+    local files=(
+        "$HOME/.config/zsh/common.zsh"
+        "$HOME/.config/zsh/local.zsh"
+    )
+    local lines
+    lines=$(grep -h "^\s*alias " "${files[@]}" 2>/dev/null)
+    if [[ -n "$1" ]]; then
+        echo "$lines" | grep "$1"
+    elif command -v fzf >/dev/null 2>&1; then
+        echo "$lines" | fzf --height=40% --layout=reverse
+    else
+        echo "$lines"
+    fi
+}
 
 # Machine-local environment variables managed by local-env.
 # Clear previously managed variables first so removed values are not
