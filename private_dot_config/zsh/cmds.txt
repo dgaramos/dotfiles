@@ -1,0 +1,51 @@
+# App command reference — loaded by dotcmds
+# Format: command  # category: description
+
+# zoxide
+z <dir>           # zoxide: jump to frecent directory (fuzzy match)
+z -               # zoxide: jump to previous directory
+zi                # zoxide: interactive jump with fzf
+zoxide query -l   # zoxide: list all tracked directories
+
+# fzf
+Ctrl+T            # fzf: fuzzy insert file path at cursor
+Ctrl+R            # fzf: fuzzy search command history
+Alt+C             # fzf: fuzzy cd into a directory
+
+# direnv
+direnv allow      # direnv: allow .envrc in current directory
+direnv deny       # direnv: revoke .envrc permissions
+direnv reload     # direnv: reload current .envrc
+
+# delta (git pager)
+# delta is configured as git pager automatically — no direct commands needed
+
+# starship
+starship explain  # starship: explain each segment in current prompt
+
+# eza
+eza --git         # eza: show git status alongside files
+eza -T --level=2  # eza: tree limited to 2 levels deep
+
+# bat
+bat -l <lang>     # bat: force syntax highlight for a specific language
+bat --list-themes # bat: list all available themes
+bat --plain       # bat: output without decorations
+
+# ripgrep (rg / rgrep)
+rg <pattern>      # rg: recursive grep with color
+rg -l <pattern>   # rg: list only files that match
+rg -t py <pat>    # rg: grep only files of a given type
+rg --hidden <pat> # rg: include hidden files in search
+
+# fd / ff
+ff <name>         # fd: find files by name
+ff -e py          # fd: find files by extension
+ff -t d <name>    # fd: find directories only
+ff --hidden <n>   # fd: include hidden files
+
+# gh (GitHub CLI)
+gh repo view      # gh: view current repo in browser
+gh run list       # gh: list recent CI runs
+gh run watch      # gh: watch a running CI job
+gh auth status    # gh: show current auth status

@@ -172,30 +172,45 @@ if command -v tmux >/dev/null 2>&1; then
     alias td='tmux detach'           # tmux: detach from current session
 fi
 
-# aliases [keyword] — list dotfile aliases and functions, optionally filtered by keyword
-aliases() {  # shell: list aliases and functions; pass keyword to filter, or use fzf interactively
-    local files=(
+# dotcmds [apps|keyword] — browse dotfile aliases, functions and app commands
+dotcmds() {  # shell: list aliases, functions and app commands; "apps" for app-only view
+    local zsh_files=(
         "$HOME/.config/zsh/common.zsh"
         "$HOME/.config/zsh/local.zsh"
     )
+    local cmds_file="$HOME/.config/zsh/cmds.txt"
 
-    local raw
-    raw=$(grep -h -E "^\s*(alias |[a-zA-Z_][a-zA-Z0-9_]*\(\)).*#" "${files[@]}" 2>/dev/null)
-    [[ -n "$1" ]] && raw=$(echo "$raw" | grep "$1")
+    local shell_raw app_raw
+    shell_raw=$(grep -h -E "^\s*(alias |[a-zA-Z_][a-zA-Z0-9_]*\(\)).*#" "${zsh_files[@]}" 2>/dev/null)
+    app_raw=$(grep -E "^\S.*#" "$cmds_file" 2>/dev/null)
 
-    local formatted
-    formatted=$(echo "$raw" | while IFS= read -r _line; do
+    local shell_fmt app_fmt
+    shell_fmt=$(echo "$shell_raw" | while IFS= read -r _line; do
         if [[ "$_line" =~ '^[[:space:]]*alias ([^=]+)=.*# (.+)$' ]]; then
-            printf "  \033[1;36m%-12s\033[0m %s\n" "${match[1]}" "${match[2]}"
+            printf "  \033[1;36m%-16s\033[0m %s\n" "${match[1]}" "${match[2]}"
         elif [[ "$_line" =~ '^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\(\).*# (.+)$' ]]; then
-            printf "  \033[1;36m%-12s\033[0m %s\n" "${match[1]}()" "${match[2]}"
+            printf "  \033[1;36m%-16s\033[0m %s\n" "${match[1]}()" "${match[2]}"
+        fi
+    done)
+    app_fmt=$(echo "$app_raw" | while IFS= read -r _line; do
+        if [[ "$_line" =~ '^([^#]+[^[:space:]#])[[:space:]]+# (.+)$' ]]; then
+            printf "  \033[1;33m%-16s\033[0m %s\n" "${match[1]}" "${match[2]}"
         fi
     done)
 
-    if command -v fzf >/dev/null 2>&1 && [[ -z "$1" ]]; then
-        echo "$formatted" | fzf --ansi --height=40% --layout=reverse
+    local output
+    if [[ "$1" == "apps" ]]; then
+        output="$app_fmt"
+    elif [[ -n "$1" ]]; then
+        output=$(printf "%s\n%s" "$shell_fmt" "$app_fmt" | grep "$1")
     else
-        echo "$formatted"
+        output=$(printf "%s\n%s" "$shell_fmt" "$app_fmt")
+    fi
+
+    if command -v fzf >/dev/null 2>&1 && [[ -z "$1" ]]; then
+        echo "$output" | fzf --ansi --height=40% --layout=reverse
+    else
+        echo "$output"
     fi
 }
 

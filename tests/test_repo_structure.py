@@ -155,19 +155,41 @@ def test_tmux_conf_no_machine_specific_paths():
         assert path not in text, f"tmux.conf contains machine-specific path: {path!r}"
 
 
-def test_aliases_function_defined():
+CMDS_TXT = REPO_ROOT / "private_dot_config" / "zsh" / "cmds.txt"
+
+
+def test_dotcmds_function_defined():
     text = COMMON_ZSH.read_text()
-    assert "aliases()" in text, "common.zsh missing aliases() function"
+    assert "dotcmds()" in text, "common.zsh missing dotcmds() function"
 
 
-def test_aliases_function_reads_common_zsh():
+def test_dotcmds_function_reads_common_zsh():
     text = COMMON_ZSH.read_text()
-    assert "common.zsh" in text, "aliases() must reference common.zsh"
+    assert "common.zsh" in text, "dotcmds() must reference common.zsh"
 
 
-def test_aliases_function_supports_fzf_fallback():
+def test_dotcmds_function_supports_fzf_fallback():
     text = COMMON_ZSH.read_text()
-    assert "command -v fzf" in text, "aliases() must check for fzf availability"
+    assert "command -v fzf" in text, "dotcmds() must check for fzf availability"
+
+
+def test_dotcmds_function_supports_apps_mode():
+    text = COMMON_ZSH.read_text()
+    assert '"apps"' in text, "dotcmds() must support 'apps' keyword"
+
+
+def test_cmds_txt_exists():
+    assert CMDS_TXT.exists(), "cmds.txt not found in private_dot_config/zsh/"
+    assert CMDS_TXT.stat().st_size > 0, "cmds.txt is empty"
+
+
+def test_cmds_txt_entries_have_comments():
+    entries = [
+        ln for ln in CMDS_TXT.read_text().splitlines()
+        if ln and not ln.startswith("#") and not ln.strip() == ""
+    ]
+    for entry in entries:
+        assert "#" in entry, f"cmds.txt entry missing comment: {entry!r}"
 
 
 def test_aliases_have_inline_comments():
