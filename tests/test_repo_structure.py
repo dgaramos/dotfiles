@@ -41,3 +41,31 @@ def test_version_file_exists():
     assert (TOOLS_DIR / ".version").exists()
     content = (TOOLS_DIR / ".version").read_text().strip()
     assert content.isdigit(), ".version must contain a single integer"
+
+
+CLI_TOOLS_SCRIPT = REPO_ROOT / ".chezmoiscripts" / "run_onchange_install-cli-tools.sh.tmpl"
+
+# Tools that must appear in every package-manager block (brew, apt, dnf, pacman).
+REQUIRED_CLI_TOOLS = ["tmux"]
+
+
+def _extract_install_lines(text: str) -> list[str]:
+    """Return lines that invoke a package manager or install helper."""
+    keywords = ("install_brew", "install_apt", "install_pacman", "sudo dnf install")
+    return [ln.strip() for ln in text.splitlines() if any(k in ln for k in keywords)]
+
+
+def test_cli_tools_script_exists():
+    assert CLI_TOOLS_SCRIPT.exists(), "CLI tools install script not found"
+
+
+def test_required_cli_tools_in_all_blocks():
+    text = CLI_TOOLS_SCRIPT.read_text()
+    install_lines = _extract_install_lines(text)
+    assert install_lines, "No install lines found in CLI tools script"
+    for tool in REQUIRED_CLI_TOOLS:
+        matching = [ln for ln in install_lines if tool in ln]
+        assert len(matching) >= 4, (
+            f"'{tool}' must appear in all four package-manager blocks "
+            f"(brew, apt, dnf, pacman); found only in: {matching}"
+        )
