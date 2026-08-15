@@ -185,17 +185,11 @@ aliases() {  # shell: list aliases and functions; pass keyword to filter, or use
 
     local formatted
     formatted=$(echo "$raw" | while IFS= read -r _line; do
-        local _n _d
         if [[ "$_line" =~ '^[[:space:]]*alias ([^=]+)=.*# (.+)$' ]]; then
-            _n="${match[1]}"
-            _d="${match[2]}"
+            printf "  \033[1;36m%-12s\033[0m %s\n" "${match[1]}" "${match[2]}"
         elif [[ "$_line" =~ '^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\(\).*# (.+)$' ]]; then
-            _n="${match[1]}()"
-            _d="${match[2]}"
-        else
-            continue
+            printf "  \033[1;36m%-12s\033[0m %s\n" "${match[1]}()" "${match[2]}"
         fi
-        printf "  \033[1;36m%-12s\033[0m %s\n" "$_n" "$_d"
     done)
 
     if command -v fzf >/dev/null 2>&1 && [[ -z "$1" ]]; then
