@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+TPM_DIR="$HOME/.tmux/plugins/tpm"
+
+if [ ! -d "$TPM_DIR/.git" ]; then
+    rm -rf "$TPM_DIR"
+    git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
+fi

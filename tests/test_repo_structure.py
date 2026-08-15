@@ -47,6 +47,15 @@ COMMON_ZSH = REPO_ROOT / "private_dot_config" / "zsh" / "common.zsh"
 CLI_TOOLS_SCRIPT = REPO_ROOT / ".chezmoiscripts" / "run_onchange_install-cli-tools.sh.tmpl"
 TMUX_CONF = REPO_ROOT / "private_dot_config" / "tmux" / "tmux.conf"
 
+TPM_SCRIPT = REPO_ROOT / ".chezmoiscripts" / "run_once_05-install-tpm.sh.tmpl"
+TPM_DIR = "~/.tmux/plugins/tpm"
+TMUX_PLUGINS_REQUIRED = [
+    "tmux-plugins/tpm",
+    "tmux-plugins/tmux-sensible",
+    "tmux-plugins/tmux-resurrect",
+    "tmux-plugins/tmux-continuum",
+]
+
 TMUX_CONF_REQUIRED = [
     "set -g prefix",
     "set -g mouse on",
@@ -86,6 +95,31 @@ def test_common_zsh_tmux_block_is_guarded():
     text = COMMON_ZSH.read_text()
     # tmux aliases must be inside a command -v tmux guard
     assert "command -v tmux" in text, "tmux aliases must be guarded by 'command -v tmux'"
+
+
+def test_tpm_bootstrap_script_exists():
+    assert TPM_SCRIPT.exists(), "TPM bootstrap script not found"
+
+
+def test_tpm_bootstrap_is_idempotent():
+    text = TPM_SCRIPT.read_text()
+    assert ".git" in text, "TPM bootstrap must check for existing clone (idempotent)"
+
+
+def test_tpm_bootstrap_clones_correct_repo():
+    text = TPM_SCRIPT.read_text()
+    assert "tmux-plugins/tpm" in text, "TPM bootstrap must clone tmux-plugins/tpm"
+
+
+def test_tmux_conf_declares_required_plugins():
+    text = TMUX_CONF.read_text()
+    for plugin in TMUX_PLUGINS_REQUIRED:
+        assert plugin in text, f"tmux.conf missing plugin declaration: {plugin!r}"
+
+
+def test_tmux_conf_runs_tpm():
+    text = TMUX_CONF.read_text()
+    assert "run '~/.tmux/plugins/tpm/tpm'" in text, "tmux.conf must call TPM run at end"
 
 
 def test_tmux_conf_exists():
