@@ -44,6 +44,19 @@ def test_version_file_exists():
 
 
 CLI_TOOLS_SCRIPT = REPO_ROOT / ".chezmoiscripts" / "run_onchange_install-cli-tools.sh.tmpl"
+TMUX_CONF = REPO_ROOT / "private_dot_config" / "tmux" / "tmux.conf"
+
+TMUX_CONF_REQUIRED = [
+    "set -g prefix",
+    "set -g mouse on",
+    "set -g history-limit",
+    "set -g base-index",
+    "mode-keys vi",
+    "set -g status",
+    "source-file",          # reload binding
+    "split-window -h",      # horizontal split
+    "split-window -v",      # vertical split
+]
 
 # Tools that must appear in every package-manager block (brew, apt, dnf, pacman).
 REQUIRED_CLI_TOOLS = ["tmux"]
@@ -57,6 +70,24 @@ def _extract_install_lines(text: str) -> list[str]:
 
 def test_cli_tools_script_exists():
     assert CLI_TOOLS_SCRIPT.exists(), "CLI tools install script not found"
+
+
+def test_tmux_conf_exists():
+    assert TMUX_CONF.exists(), "tmux.conf not found in private_dot_config/tmux/"
+    assert TMUX_CONF.stat().st_size > 0, "tmux.conf is empty"
+
+
+def test_tmux_conf_required_settings():
+    text = TMUX_CONF.read_text()
+    for setting in TMUX_CONF_REQUIRED:
+        assert setting in text, f"tmux.conf missing required setting: {setting!r}"
+
+
+def test_tmux_conf_no_machine_specific_paths():
+    text = TMUX_CONF.read_text()
+    forbidden = ["/home/", "/Users/", "/root/"]
+    for path in forbidden:
+        assert path not in text, f"tmux.conf contains machine-specific path: {path!r}"
 
 
 def test_required_cli_tools_in_all_blocks():
