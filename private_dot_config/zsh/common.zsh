@@ -164,14 +164,16 @@ fi
 
 # tmux
 if command -v tmux >/dev/null 2>&1; then
-    tm() { tmux new-session -A -s "${1:-main}" }  # attach or create session (default: main)
+    tm() {  # attach or create session (default: main)
+        tmux new-session -A -s "${1:-main}"
+    }
     alias tls='tmux ls'              # list sessions
     alias tks='tmux kill-session -t' # kill named session
     alias td='tmux detach'           # detach from current session
 fi
 
 # aliases [keyword] — list dotfile aliases and functions, optionally filtered by keyword
-aliases() {
+aliases() {  # list aliases and functions; pass keyword to filter, or use fzf interactively
     local files=(
         "$HOME/.config/zsh/common.zsh"
         "$HOME/.config/zsh/local.zsh"
