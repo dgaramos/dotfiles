@@ -84,6 +84,21 @@ def test_cli_tools_script_exists():
 
 TMUX_ZSH_ALIASES = ["tm()", "tls=", "tks=", "td="]
 
+# Aliases that must have inline comments (descriptions)
+ALIASES_REQUIRING_COMMENTS = [
+    "alias c=",
+    "alias gs=",
+    "alias cz=",
+    "alias czd=",
+    "alias cza=",
+    "alias czu=",
+    "alias cze=",
+    "alias zshr=",
+    "alias tls=",
+    "alias tks=",
+    "alias td=",
+]
+
 
 def test_common_zsh_has_tmux_aliases():
     text = COMMON_ZSH.read_text()
@@ -138,6 +153,32 @@ def test_tmux_conf_no_machine_specific_paths():
     forbidden = ["/home/", "/Users/", "/root/"]
     for path in forbidden:
         assert path not in text, f"tmux.conf contains machine-specific path: {path!r}"
+
+
+def test_aliases_function_defined():
+    text = COMMON_ZSH.read_text()
+    assert "aliases()" in text, "common.zsh missing aliases() function"
+
+
+def test_aliases_function_reads_common_zsh():
+    text = COMMON_ZSH.read_text()
+    assert "common.zsh" in text, "aliases() must reference common.zsh"
+
+
+def test_aliases_function_supports_fzf_fallback():
+    text = COMMON_ZSH.read_text()
+    assert "command -v fzf" in text, "aliases() must check for fzf availability"
+
+
+def test_aliases_have_inline_comments():
+    text = COMMON_ZSH.read_text()
+    for alias_prefix in ALIASES_REQUIRING_COMMENTS:
+        matching = [ln for ln in text.splitlines() if alias_prefix in ln]
+        assert matching, f"common.zsh missing alias: {alias_prefix!r}"
+        for line in matching:
+            assert "#" in line, (
+                f"alias line missing inline comment: {line.strip()!r}"
+            )
 
 
 def test_required_cli_tools_in_all_blocks():
