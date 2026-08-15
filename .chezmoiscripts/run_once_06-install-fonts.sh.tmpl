@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+
+FONT_NAME="FiraCode"
+FONT_DIR_LINUX="$HOME/.local/share/fonts"
+
+install_firacode_nerd_font_linux() {
+    # Skip if any FiraCode Nerd Font file is already present
+    if find "$FONT_DIR_LINUX" -name "FiraCode*Nerd*" 2>/dev/null | grep -q .; then
+        echo "FiraCode Nerd Font already installed, skipping"
+        return 0
+    fi
+
+    tag=$(curl -fsSL "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest" \
+        | grep '"tag_name"' | head -1 \
+        | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+    [ -z "$tag" ] && { echo "Could not resolve nerd-fonts version"; return 1; }
+
+    url="https://github.com/ryanoasis/nerd-fonts/releases/download/$tag/${FONT_NAME}.zip"
+    mkdir -p "$FONT_DIR_LINUX"
+    curl -fLo /tmp/_nf.zip "$url" || { echo "Download failed: $url"; return 1; }
+    unzip -o /tmp/_nf.zip -d "$FONT_DIR_LINUX/$FONT_NAME" '*.ttf' '*.otf' 2>/dev/null || true
+    rm -f /tmp/_nf.zip
+    fc-cache -fv "$FONT_DIR_LINUX" >/dev/null 2>&1 || true
+    echo "Installed FiraCode Nerd Font ($tag)"
+}
+
+if command -v brew >/dev/null 2>&1; then
+    brew list --cask font-fira-code-nerd-font >/dev/null 2>&1 \
+        || brew install --cask font-fira-code-nerd-font
+else
+    install_firacode_nerd_font_linux
+fi

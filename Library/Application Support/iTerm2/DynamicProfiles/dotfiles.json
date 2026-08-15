@@ -1,0 +1,24 @@
+{
+  "Profiles": [
+    {
+      "Name": "dotfiles",
+      "Guid": "E1F2A3B4-C5D6-7890-ABCD-EF1234567890",
+      "Normal Font": "FiraCodeNFM-Reg 13",
+      "Non Ascii Font": "FiraCodeNFM-Reg 13",
+      "Use Non-ASCII Font": false,
+      "Use Ligatures": true,
+      "Minimum Contrast": 0,
+      "Cursor Type": 1,
+      "Blinking Cursor": true,
+      "Scrollback Lines": 10000,
+      "Unlimited Scrollback": false,
+      "Terminal Type": "xterm-256color",
+      "Set Local Environment Vars": true,
+      "Close Sessions On End": 1,
+      "Prompt Before Closing 2": 0,
+      "Working Directory": "",
+      "Custom Directory": "No",
+      "Tags": ["dotfiles"]
+    }
+  ]
+}

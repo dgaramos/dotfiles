@@ -231,6 +231,53 @@ def test_aliases_have_inline_comments():
             )
 
 
+FONTS_SCRIPT = REPO_ROOT / ".chezmoiscripts" / "run_once_06-install-fonts.sh.tmpl"
+ITERM2_PROFILE = REPO_ROOT / "Library" / "Application Support" / "iTerm2" / "DynamicProfiles" / "dotfiles.json"
+
+
+def test_fonts_script_exists():
+    assert FONTS_SCRIPT.is_file(), "run_once_06-install-fonts.sh.tmpl is missing"
+
+
+def test_fonts_script_covers_macos():
+    text = FONTS_SCRIPT.read_text()
+    assert "brew" in text and "font-fira-code-nerd-font" in text, (
+        "fonts script must install via Homebrew on macOS"
+    )
+
+
+def test_fonts_script_covers_linux():
+    text = FONTS_SCRIPT.read_text()
+    assert "install_firacode_nerd_font_linux" in text, (
+        "fonts script must include a Linux install path"
+    )
+
+
+def test_iterm2_profile_exists():
+    assert ITERM2_PROFILE.is_file(), "iTerm2 DynamicProfiles/dotfiles.json is missing"
+
+
+def test_iterm2_profile_is_valid_json():
+    import json
+    json.loads(ITERM2_PROFILE.read_text())
+
+
+def test_iterm2_profile_uses_firacode_nerd_font():
+    import json
+    profiles = json.loads(ITERM2_PROFILE.read_text())["Profiles"]
+    assert any("FiraCode" in p.get("Normal Font", "") for p in profiles), (
+        "iTerm2 profile must set FiraCode Nerd Font"
+    )
+
+
+def test_iterm2_profile_enables_ligatures():
+    import json
+    profiles = json.loads(ITERM2_PROFILE.read_text())["Profiles"]
+    assert any(p.get("Use Ligatures") is True for p in profiles), (
+        "iTerm2 profile must have Use Ligatures: true"
+    )
+
+
 def test_required_cli_tools_in_all_blocks():
     text = CLI_TOOLS_SCRIPT.read_text()
     install_lines = _extract_install_lines(text)
