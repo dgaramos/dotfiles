@@ -74,10 +74,10 @@ install_direnv() {
 }
 
 if command -v brew >/dev/null 2>&1; then
-    install_brew fzf zoxide ripgrep fd bat eza direnv delta starship gh
+    install_brew fzf zoxide ripgrep fd bat eza direnv delta starship gh tmux
 
 elif command -v apt >/dev/null 2>&1; then
-    install_apt fzf ripgrep fd-find bat direnv delta
+    install_apt fzf ripgrep fd-find bat direnv delta tmux
     install_apt zoxide
     install_apt eza
     install_starship
@@ -85,6 +85,7 @@ elif command -v apt >/dev/null 2>&1; then
 elif command -v dnf >/dev/null 2>&1; then
     mkdir -p ~/.local/bin
     # VER = version without v prefix, TAG = full tag (e.g. v1.2.3)
+    sudo dnf install -y tmux || true
     install_from_github fzf    junegunn/fzf         'fzf-VER-linux_arm64.tar.gz'
     install_from_github zoxide ajeetdsouza/zoxide   'zoxide-VER-aarch64-unknown-linux-musl.tar.gz'
     install_from_github rg     BurntSushi/ripgrep   'ripgrep-VER-aarch64-unknown-linux-musl.tar.gz'  rg
@@ -96,5 +97,5 @@ elif command -v dnf >/dev/null 2>&1; then
     install_starship
 
 elif command -v pacman >/dev/null 2>&1; then
-    install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship
+    install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship tmux
 fi
