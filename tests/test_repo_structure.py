@@ -43,6 +43,7 @@ def test_version_file_exists():
     assert content.isdigit(), ".version must contain a single integer"
 
 
+COMMON_ZSH = REPO_ROOT / "private_dot_config" / "zsh" / "common.zsh"
 CLI_TOOLS_SCRIPT = REPO_ROOT / ".chezmoiscripts" / "run_onchange_install-cli-tools.sh.tmpl"
 TMUX_CONF = REPO_ROOT / "private_dot_config" / "tmux" / "tmux.conf"
 
@@ -70,6 +71,21 @@ def _extract_install_lines(text: str) -> list[str]:
 
 def test_cli_tools_script_exists():
     assert CLI_TOOLS_SCRIPT.exists(), "CLI tools install script not found"
+
+
+TMUX_ZSH_ALIASES = ["tm()", "tls=", "tks=", "td="]
+
+
+def test_common_zsh_has_tmux_aliases():
+    text = COMMON_ZSH.read_text()
+    for alias in TMUX_ZSH_ALIASES:
+        assert alias in text, f"common.zsh missing tmux alias/function: {alias!r}"
+
+
+def test_common_zsh_tmux_block_is_guarded():
+    text = COMMON_ZSH.read_text()
+    # tmux aliases must be inside a command -v tmux guard
+    assert "command -v tmux" in text, "tmux aliases must be guarded by 'command -v tmux'"
 
 
 def test_tmux_conf_exists():

@@ -162,6 +162,15 @@ if command -v direnv >/dev/null 2>&1; then
     eval "$(direnv hook zsh)"
 fi
 
+# tmux
+if command -v tmux >/dev/null 2>&1; then
+    # attach to named session or create it (default: main)
+    tm() { tmux new-session -A -s "${1:-main}" }
+    alias tls='tmux ls'
+    alias tks='tmux kill-session -t'
+    alias td='tmux detach'
+fi
+
 # Machine-local environment variables managed by local-env.
 # Clear previously managed variables first so removed values are not
 # inherited by a new shell.
