@@ -29,6 +29,7 @@ This repository provides a portable developer workstation setup with shared shel
 - tmux configured with persistent sessions (TPM, resurrect, continuum)
 - Secret-safe — never commits credentials or private references
 - Test suite for all custom tools
+- `dotcmds` — in-shell command reference for aliases, functions, and CLI tools
 
 ## Supported Machines
 
@@ -237,6 +238,31 @@ The following paths are runtime state and never managed by chezmoi:
 ~/.tmux/plugins/             → TPM and tmux plugins
 ```
 
+## Command Reference (`dotcmds`)
+
+The shell function `dotcmds` provides an in-shell reference for everything defined in these dotfiles.
+
+```bash
+dotcmds             # browse all aliases, functions and app commands via fzf
+dotcmds apps        # show only app/tool commands (no aliases)
+dotcmds tmux        # filter by keyword
+dotcmds chezmoi     # filter chezmoi aliases
+```
+
+Aliases and functions defined in `common.zsh` must have an inline comment with the format `# category: description` — this is what `dotcmds` parses and displays.
+
+App and tool commands are documented in:
+
+```text
+private_dot_config/zsh/cmds.txt
+```
+
+**When adding a new CLI tool or custom tool to the dotfiles, add its commands to `cmds.txt`** using the same format:
+
+```text
+tool <args>    # toolname: what it does
+```
+
 ## Testing
 
 ```bash
@@ -244,7 +270,7 @@ pip install pytest   # or: brew install pytest
 pytest tools/ tests/ -v
 ```
 
-154 tests covering all custom tools, repo structure consistency, and zsh file syntax.
+164 tests covering all custom tools, repo structure consistency, and zsh file syntax.
 
 ## Secrets
 

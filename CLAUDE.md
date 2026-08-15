@@ -185,6 +185,39 @@ Allowed types:
 
 Commit descriptions should be concise, imperative, and written in English.
 
+## Command Reference (`dotcmds`)
+
+The `dotcmds` shell function is the in-shell reference for everything in these dotfiles.
+
+```bash
+dotcmds             # browse all aliases, functions and app commands via fzf
+dotcmds apps        # show only app/tool commands
+dotcmds <keyword>   # filter by keyword (e.g. dotcmds tmux, dotcmds chezmoi)
+```
+
+### Keeping it up to date
+
+**When adding a new alias or function to `common.zsh`**, include an inline comment with the format:
+
+```zsh
+alias name='cmd'    # category: what it does
+fn() {              # category: what it does
+```
+
+**When adding a new CLI tool or custom tool**, document its commands in:
+
+```text
+private_dot_config/zsh/cmds.txt
+```
+
+Format:
+
+```text
+tool <args>    # toolname: what it does
+```
+
+If the new tool is a custom tool under `tools/`, a test in `tests/test_repo_structure.py` must verify it has entries in `cmds.txt`.
+
 ## Testing
 
 Run the full test suite before committing:

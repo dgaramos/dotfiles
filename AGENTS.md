@@ -117,6 +117,27 @@ Aliases in chezmoi-managed zsh files must only reference:
 
 Never alias external services or application-specific commands (e.g. `open-webui`, `nginx`, app-specific CLIs) in the repo. Those belong in `~/.config/zsh/local.zsh` on the specific machine. The `check-dotfiles` scanner enforces this automatically.
 
+### Command reference (`dotcmds`)
+
+The `dotcmds` shell function is the in-shell reference for all aliases, functions, and CLI tool commands in these dotfiles.
+
+When adding anything to the shell environment, keep `dotcmds` up to date:
+
+**New alias or function in `common.zsh`** — add an inline comment with the format:
+
+```zsh
+alias name='cmd'    # category: what it does
+fn() {              # category: what it does
+```
+
+**New CLI tool or custom tool** — document its commands in `private_dot_config/zsh/cmds.txt`:
+
+```text
+tool <args>    # toolname: what it does
+```
+
+If the tool is a custom tool under `tools/`, add a test in `tests/test_repo_structure.py` to verify it has entries in `cmds.txt` (follow the `CUSTOM_TOOLS_IN_CMDS` pattern).
+
 ### Custom tools
 
 Custom CLI utilities live in `tools/`. Each has its own `README.md`, `CLAUDE.md`, and `AGENTS.md`.
