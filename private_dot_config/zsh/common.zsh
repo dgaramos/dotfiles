@@ -164,7 +164,7 @@ fi
 
 # tmux
 if command -v tmux >/dev/null 2>&1; then
-    tm() {  # attach or create session (default: main)
+    tm() {  # tmux: attach or create session (default: main)
         tmux new-session -A -s "${1:-main}"
     }
     alias tls='tmux ls'              # list sessions
@@ -173,7 +173,7 @@ if command -v tmux >/dev/null 2>&1; then
 fi
 
 # aliases [keyword] — list dotfile aliases and functions, optionally filtered by keyword
-aliases() {  # list aliases and functions; pass keyword to filter, or use fzf interactively
+aliases() {  # shell: list aliases and functions; pass keyword to filter, or use fzf interactively
     local files=(
         "$HOME/.config/zsh/common.zsh"
         "$HOME/.config/zsh/local.zsh"
