@@ -192,6 +192,34 @@ def test_cmds_txt_entries_have_comments():
         assert "#" in entry, f"cmds.txt entry missing comment: {entry!r}"
 
 
+CUSTOM_TOOLS_IN_CMDS = ["sshm", "local-env", "localz", "check-dotfiles"]
+
+
+def test_cmds_txt_covers_custom_tools():
+    text = CMDS_TXT.read_text()
+    for tool in CUSTOM_TOOLS_IN_CMDS:
+        assert tool in text, f"cmds.txt missing entries for custom tool: {tool!r}"
+
+
+def test_cmds_txt_custom_tool_entries_have_category():
+    text = CMDS_TXT.read_text()
+    for tool in CUSTOM_TOOLS_IN_CMDS:
+        tool_lines = [
+            ln for ln in text.splitlines()
+            if ln.startswith(tool) and "#" in ln
+        ]
+        assert tool_lines, f"cmds.txt has no documented commands for {tool!r}"
+        for ln in tool_lines:
+            assert f"# {tool}:" in ln, (
+                f"cmds.txt entry for {tool!r} missing category prefix: {ln!r}"
+            )
+
+
+def test_dotcmds_function_reads_cmds_txt():
+    text = COMMON_ZSH.read_text()
+    assert "cmds.txt" in text, "dotcmds() must reference cmds.txt"
+
+
 def test_aliases_have_inline_comments():
     text = COMMON_ZSH.read_text()
     for alias_prefix in ALIASES_REQUIRING_COMMENTS:
