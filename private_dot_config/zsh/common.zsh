@@ -177,7 +177,7 @@ aliases() {
         "$HOME/.config/zsh/local.zsh"
     )
     local lines
-    lines=$(grep -h -E "^\s*(alias |[a-zA-Z_][a-zA-Z0-9_]*\(\))" "${files[@]}" 2>/dev/null)
+    lines=$(grep -h -E "^\s*(alias |[a-zA-Z_][a-zA-Z0-9_]*\(\)).*#" "${files[@]}" 2>/dev/null)
     if [[ -n "$1" ]]; then
         echo "$lines" | grep "$1"
     elif command -v fzf >/dev/null 2>&1; then
