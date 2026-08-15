@@ -163,6 +163,8 @@ The profile named **dotfiles** sets:
 
 To activate it in iTerm2: Profiles → select **dotfiles** → Set as Default.
 
+This profile only applies to iTerm2 on macOS. Other terminals (Ghostty, Alacritty, WezTerm, Termius, etc.) are not managed here and must be configured manually. On SSH clients like Termius, the font must also be installed on the client device — the server installation has no effect.
+
 ## Secrets
 
 Never commit:

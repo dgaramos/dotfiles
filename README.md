@@ -157,6 +157,8 @@ The prompt uses [Starship](https://starship.rs) with icons that require a Nerd F
 
 On remote machines (EC2, homelab) the font must be installed on the **client**, not the server.
 
+The iTerm2 Dynamic Profile (FiraCode Nerd Font + ligatures) is only deployed on macOS and only applies to iTerm2. Other terminals (Ghostty, Alacritty, WezTerm, Termius, etc.) must be configured manually — set the font to **FiraCode Nerd Font Mono** in their own settings. Ligature support also varies by terminal.
+
 ### macOS
 
 ```bash
