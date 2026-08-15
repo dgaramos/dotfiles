@@ -26,6 +26,7 @@ This repository provides a portable developer workstation setup with shared shel
 - Local shell manager (`localz`)
 - Git identity managed per-machine via `local-env`
 - bat and delta pre-configured
+- tmux configured with persistent sessions (TPM, resurrect, continuum)
 - Secret-safe — never commits credentials or private references
 - Test suite for all custom tools
 
@@ -61,6 +62,7 @@ This repository provides a portable developer workstation setup with shared shel
     ├── bat/config
     ├── delta/config
     ├── starship.toml
+    ├── tmux/tmux.conf
     └── zsh/
         ├── common.zsh
         ├── personal.zsh
@@ -135,6 +137,15 @@ POSIX `find` and `grep` are not replaced — shell tools and SDKs may depend on 
 
 - git-delta (side-by-side diffs, navigation)
 
+### Terminal multiplexer
+
+- tmux — configured via `private_dot_config/tmux/tmux.conf`
+  - Prefix: `Ctrl+a`; mouse enabled; splits with `|` / `-`; pane navigation with `hjkl`
+  - `tm [name]` — attach to session or create it (default: `main`)
+  - `tls` / `tks` / `td` — list, kill, detach
+  - [TPM](https://github.com/tmux-plugins/tpm) installed automatically via `run_once_05-install-tpm`
+  - `tmux-resurrect` + `tmux-continuum` — sessions survive reboots and broken pipes
+
 ## Installation
 
 ### Prerequisites
@@ -196,8 +207,9 @@ Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply`:
 02-install-homebrew     → installs Homebrew (macOS only)
 03-install-oh-my-zsh    → installs oh-my-zsh
 04-install-zsh-plugins  → clones zsh plugins
-05-configure-gh-auth    → authenticates gh if available
-06-configure-git        → sets git identity, wires delta config (macOS)
+05-install-tpm          → clones TPM into ~/.tmux/plugins/tpm
+06-configure-gh-auth    → authenticates gh if available
+07-configure-git        → sets git identity, wires delta config (macOS)
 install-cli-tools       → installs CLI tools (re-runs when content changes)
 install-git-hooks       → installs pre-commit scanner hook
 install-tools           → installs custom tools from tools/ (re-runs on version bump)
@@ -217,6 +229,14 @@ Use `local-env` for environment variables. Use `~/.config/zsh/local.zsh` as a ge
 
 Neither file is managed by chezmoi or committed.
 
+The following paths are runtime state and never managed by chezmoi:
+
+```text
+~/.config/local-env/env      → local-env variable values
+~/.config/local-env/names    → local-env variable names
+~/.tmux/plugins/             → TPM and tmux plugins
+```
+
 ## Testing
 
 ```bash
@@ -224,7 +244,7 @@ pip install pytest   # or: brew install pytest
 pytest tools/ tests/ -v
 ```
 
-76 tests covering all custom tools, repo structure consistency, and zsh file syntax.
+154 tests covering all custom tools, repo structure consistency, and zsh file syntax.
 
 ## Secrets
 

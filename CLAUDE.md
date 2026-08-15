@@ -50,6 +50,7 @@ Local runtime state (never managed by chezmoi):
 ```text
 ~/.config/local-env/env
 ~/.config/local-env/names
+~/.tmux/plugins/
 ```
 
 ### local.zsh
@@ -92,6 +93,7 @@ run_once_01-install-zsh          → installs zsh + sets as default shell (Linux
 run_once_02-install-homebrew     → installs Homebrew (macOS only)
 run_once_03-install-oh-my-zsh    → installs oh-my-zsh
 run_once_04-install-zsh-plugins  → clones zsh plugins
+run_once_05-install-tpm          → clones TPM into ~/.tmux/plugins/tpm
 run_onchange_install-cli-tools   → installs CLI tools (re-runs when content changes)
 run_onchange_install-tools       → installs custom tools from tools/ (re-runs on version bump)
 ```
@@ -120,6 +122,7 @@ Current tools include:
 - delta
 - starship
 - gh
+- tmux
 
 Platform-specific executable differences are handled in shell configuration where necessary, such as `fdfind` and `batcat` on Debian.
 
@@ -190,7 +193,7 @@ Run the full test suite before committing:
 pytest tools/ tests/ -v
 ```
 
-76 tests cover all custom tools (unit), repo structure consistency, and zsh file syntax (integration). A failing test is a blocker.
+154 tests cover all custom tools (unit), repo structure consistency, and zsh file syntax (integration). A failing test is a blocker.
 
 To install pytest: `brew install pytest` (macOS) or `pip install pytest`.
 
