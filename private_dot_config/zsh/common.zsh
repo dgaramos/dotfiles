@@ -179,33 +179,29 @@ aliases() {  # shell: list aliases and functions; pass keyword to filter, or use
         "$HOME/.config/zsh/local.zsh"
     )
 
-    _aliases_format() {
-        while IFS= read -r line; do
-            local name desc
-            # alias name='...'  # cat: desc
-            if [[ "$line" =~ ^[[:space:]]*alias\ ([^=]+)=.*#\ (.+)$ ]]; then
-                name="${match[1]}"
-                desc="${match[2]}"
-            # fn() {  # cat: desc
-            elif [[ "$line" =~ ^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\(\).*#\ (.+)$ ]]; then
-                name="${match[1]}()"
-                desc="${match[2]}"
-            else
-                continue
-            fi
-            printf "  \033[1;36m%-12s\033[0m %s\n" "$name" "$desc"
-        done
-    }
-
     local raw
     raw=$(grep -h -E "^\s*(alias |[a-zA-Z_][a-zA-Z0-9_]*\(\)).*#" "${files[@]}" 2>/dev/null)
+    [[ -n "$1" ]] && raw=$(echo "$raw" | grep "$1")
 
-    if [[ -n "$1" ]]; then
-        echo "$raw" | grep "$1" | _aliases_format
-    elif command -v fzf >/dev/null 2>&1; then
-        echo "$raw" | _aliases_format | fzf --ansi --height=40% --layout=reverse
+    local formatted
+    formatted=$(echo "$raw" | while IFS= read -r _line; do
+        local _n _d
+        if [[ "$_line" =~ '^[[:space:]]*alias ([^=]+)=.*# (.+)$' ]]; then
+            _n="${match[1]}"
+            _d="${match[2]}"
+        elif [[ "$_line" =~ '^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\(\).*# (.+)$' ]]; then
+            _n="${match[1]}()"
+            _d="${match[2]}"
+        else
+            continue
+        fi
+        printf "  \033[1;36m%-12s\033[0m %s\n" "$_n" "$_d"
+    done)
+
+    if command -v fzf >/dev/null 2>&1 && [[ -z "$1" ]]; then
+        echo "$formatted" | fzf --ansi --height=40% --layout=reverse
     else
-        echo "$raw" | _aliases_format
+        echo "$formatted"
     fi
 }
 
