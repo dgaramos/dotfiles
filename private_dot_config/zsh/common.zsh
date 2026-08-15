@@ -17,36 +17,36 @@ setopt SHARE_HISTORY
 setopt INC_APPEND_HISTORY
 
 # Navigation
-alias c='clear'                # clear the terminal
-alias ..='cd ..'               # go up one directory
-alias ...='cd ../..'           # go up two directories
-alias ....='cd ../../..'       # go up three directories
+alias c='clear'                # nav: clear the terminal
+alias ..='cd ..'               # nav: go up one directory
+alias ...='cd ../..'           # nav: go up two directories
+alias ....='cd ../../..'       # nav: go up three directories
 
 # Git
-alias gs='git status'          # show working tree status
-alias ga='git add'             # stage files
-alias gc='git commit'          # create a commit
-alias gp='git push'            # push to remote
-alias gl='git pull'            # pull from remote
-alias gd='git diff'            # show unstaged changes
-alias gb='git branch'          # list or create branches
-alias gco='git checkout'       # switch branch or restore files
+alias gs='git status'          # git: show working tree status
+alias ga='git add'             # git: stage files
+alias gc='git commit'          # git: create a commit
+alias gp='git push'            # git: push to remote
+alias gl='git pull'            # git: pull from remote
+alias gd='git diff'            # git: show unstaged changes
+alias gb='git branch'          # git: list or create branches
+alias gco='git checkout'       # git: switch branch or restore files
 
 # GitHub CLI
 if command -v gh >/dev/null 2>&1; then
-    alias prs='gh pr list'             # list open PRs
-    alias mypr='gh pr list --author=@me'  # list my open PRs
-    alias prv='gh pr view'             # view a PR
-    alias issues='gh issue list'       # list open issues
+    alias prs='gh pr list'             # gh: list open PRs
+    alias mypr='gh pr list --author=@me'  # gh: list my open PRs
+    alias prv='gh pr view'             # gh: view a PR
+    alias issues='gh issue list'       # gh: list open issues
 fi
 
 # Chezmoi
-alias cz='chezmoi'             # chezmoi root command
-alias czd='chezmoi diff'       # show pending changes
-alias cza='chezmoi apply'      # apply dotfiles to home
-alias czu='chezmoi update'     # pull + apply from remote
-alias cze='chezmoi edit'       # edit a managed file
-alias zshr='exec zsh'          # reload zsh shell
+alias cz='chezmoi'             # chezmoi: root command
+alias czd='chezmoi diff'       # chezmoi: show pending changes
+alias cza='chezmoi apply'      # chezmoi: apply dotfiles to home
+alias czu='chezmoi update'     # chezmoi: pull + apply from remote
+alias cze='chezmoi edit'       # chezmoi: edit a managed file
+alias zshr='exec zsh'          # shell: reload zsh
 
 if command -v starship >/dev/null 2>&1; then
     eval "$(starship init zsh)"
@@ -57,26 +57,26 @@ fi
 # ============================================================
 
 if command -v eza >/dev/null 2>&1; then
-    alias ls='eza'                      # list files
-    alias ll='eza -lah --icons'         # long list with hidden files
-    alias la='eza -la --icons'          # long list
-    alias tree='eza --tree --icons'     # directory tree
+    alias ls='eza'                      # eza: list files
+    alias ll='eza -lah --icons'         # eza: long list with hidden files
+    alias la='eza -la --icons'          # eza: long list
+    alias tree='eza --tree --icons'     # eza: directory tree
 fi
 
 if command -v bat >/dev/null 2>&1; then
-    alias cat='bat'                     # pager with syntax highlight
+    alias cat='bat'                     # bat: pager with syntax highlight
 elif command -v batcat >/dev/null 2>&1; then
-    alias cat='batcat'                  # pager with syntax highlight (Debian)
+    alias cat='batcat'                  # bat: pager with syntax highlight (Debian)
 fi
 
 if command -v rg >/dev/null 2>&1; then
-    alias rgrep='rg'                    # fast recursive grep
+    alias rgrep='rg'                    # rg: fast recursive grep
 fi
 
 if command -v fd >/dev/null 2>&1; then
-    alias ff='fd'                       # fast file finder
+    alias ff='fd'                       # fd: fast file finder
 elif command -v fdfind >/dev/null 2>&1; then
-    alias ff='fdfind'                   # fast file finder (Debian)
+    alias ff='fdfind'                   # fd: fast file finder (Debian)
 fi
 
 # FZF
@@ -167,9 +167,9 @@ if command -v tmux >/dev/null 2>&1; then
     tm() {  # tmux: attach or create session (default: main)
         tmux new-session -A -s "${1:-main}"
     }
-    alias tls='tmux ls'              # list sessions
-    alias tks='tmux kill-session -t' # kill named session
-    alias td='tmux detach'           # detach from current session
+    alias tls='tmux ls'              # tmux: list sessions
+    alias tks='tmux kill-session -t' # tmux: kill named session
+    alias td='tmux detach'           # tmux: detach from current session
 fi
 
 # aliases [keyword] — list dotfile aliases and functions, optionally filtered by keyword
@@ -178,14 +178,34 @@ aliases() {  # shell: list aliases and functions; pass keyword to filter, or use
         "$HOME/.config/zsh/common.zsh"
         "$HOME/.config/zsh/local.zsh"
     )
-    local lines
-    lines=$(grep -h -E "^\s*(alias |[a-zA-Z_][a-zA-Z0-9_]*\(\)).*#" "${files[@]}" 2>/dev/null)
+
+    _aliases_format() {
+        while IFS= read -r line; do
+            local name desc
+            # alias name='...'  # cat: desc
+            if [[ "$line" =~ ^[[:space:]]*alias\ ([^=]+)=.*#\ (.+)$ ]]; then
+                name="${match[1]}"
+                desc="${match[2]}"
+            # fn() {  # cat: desc
+            elif [[ "$line" =~ ^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\(\).*#\ (.+)$ ]]; then
+                name="${match[1]}()"
+                desc="${match[2]}"
+            else
+                continue
+            fi
+            printf "  \033[1;36m%-12s\033[0m %s\n" "$name" "$desc"
+        done
+    }
+
+    local raw
+    raw=$(grep -h -E "^\s*(alias |[a-zA-Z_][a-zA-Z0-9_]*\(\)).*#" "${files[@]}" 2>/dev/null)
+
     if [[ -n "$1" ]]; then
-        echo "$lines" | grep "$1"
+        echo "$raw" | grep "$1" | _aliases_format
     elif command -v fzf >/dev/null 2>&1; then
-        echo "$lines" | fzf --height=40% --layout=reverse
+        echo "$raw" | _aliases_format | fzf --ansi --height=40% --layout=reverse
     else
-        echo "$lines"
+        echo "$raw" | _aliases_format
     fi
 }
 
