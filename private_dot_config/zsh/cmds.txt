@@ -49,3 +49,28 @@ gh repo view      # gh: view current repo in browser
 gh run list       # gh: list recent CI runs
 gh run watch      # gh: watch a running CI job
 gh auth status    # gh: show current auth status
+
+# sshm (SSH manager)
+sshm list                # sshm: list configured SSH hosts
+sshm add                 # sshm: interactive wizard to add a host
+sshm edit                # sshm: open ~/.ssh/config in $EDITOR
+sshm copy-id <host>      # sshm: copy public key to server
+sshm keygen              # sshm: wizard to generate a new key pair
+
+# local-env (machine-local env vars)
+local-env set N V        # local-env: set a machine-local env variable
+local-env unset N        # local-env: remove a machine-local env variable
+local-env get N          # local-env: print current value of a variable
+local-env list           # local-env: list all managed variables
+local-env edit           # local-env: open state file in $EDITOR
+
+# localz (machine-local shell config)
+localz edit              # localz: open local.zsh in $EDITOR
+localz show              # localz: print contents of local.zsh
+localz list              # localz: list aliases and functions in local.zsh
+localz add N CMD         # localz: append an alias to local.zsh
+
+# check-dotfiles (secret scanner)
+check-dotfiles --staged  # check-dotfiles: scan staged files (pre-commit)
+check-dotfiles --all     # check-dotfiles: scan all tracked files
+check-dotfiles FILE      # check-dotfiles: scan specific file(s)
