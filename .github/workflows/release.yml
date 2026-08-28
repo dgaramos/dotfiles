@@ -1,0 +1,162 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pytest pytest-cov
+
+      - name: Run tests
+        run: pytest tools/ tests/ -v --cov --cov-report=xml --junit-xml=junit.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          files: junit.xml
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          CURRENT_VERSION=$(cat version)
+          LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%s" "${LAST_TAG}..HEAD")
+          fi
+
+          MAJOR=0; MINOR=0; PATCH=0
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          BUMP="patch"
+          while IFS= read -r LINE; do
+            if echo "$LINE" | grep -qE '!:|\bBREAKING CHANGE\b'; then
+              BUMP="major"
+            elif echo "$LINE" | grep -qE '^feat(\(.+\))?:' && [ "$BUMP" != "major" ]; then
+              BUMP="minor"
+            fi
+          done <<< "$COMMITS"
+
+          case "$BUMP" in
+            major)
+              MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor)
+              MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch)
+              PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s %H" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%s %H" "${LAST_TAG}..HEAD")
+          fi
+
+          NOTES=""
+          FEATS=""; FIXES=""; DOCS=""; REFACTORS=""; CHORES=""; TESTS=""; OTHERS=""
+
+          while IFS= read -r LINE; do
+            SUBJECT=$(echo "$LINE" | rev | cut -d' ' -f2- | rev)
+            if echo "$SUBJECT" | grep -qE '^feat(\(.+\))?:'; then
+              FEATS="${FEATS}- ${SUBJECT}\n"
+            elif echo "$SUBJECT" | grep -qE '^fix(\(.+\))?:'; then
+              FIXES="${FIXES}- ${SUBJECT}\n"
+            elif echo "$SUBJECT" | grep -qE '^docs(\(.+\))?:'; then
+              DOCS="${DOCS}- ${SUBJECT}\n"
+            elif echo "$SUBJECT" | grep -qE '^refactor(\(.+\))?:'; then
+              REFACTORS="${REFACTORS}- ${SUBJECT}\n"
+            elif echo "$SUBJECT" | grep -qE '^(chore|build|ci)(\(.+\))?:'; then
+              CHORES="${CHORES}- ${SUBJECT}\n"
+            elif echo "$SUBJECT" | grep -qE '^test(\(.+\))?:'; then
+              TESTS="${TESTS}- ${SUBJECT}\n"
+            else
+              OTHERS="${OTHERS}- ${SUBJECT}\n"
+            fi
+          done <<< "$COMMITS"
+
+          [ -n "$FEATS" ]     && NOTES="${NOTES}## Features\n${FEATS}\n"
+          [ -n "$FIXES" ]     && NOTES="${NOTES}## Bug Fixes\n${FIXES}\n"
+          [ -n "$DOCS" ]      && NOTES="${NOTES}## Documentation\n${DOCS}\n"
+          [ -n "$REFACTORS" ] && NOTES="${NOTES}## Refactors\n${REFACTORS}\n"
+          [ -n "$TESTS" ]     && NOTES="${NOTES}## Tests\n${TESTS}\n"
+          [ -n "$CHORES" ]    && NOTES="${NOTES}## Chores\n${CHORES}\n"
+          [ -n "$OTHERS" ]    && NOTES="${NOTES}## Other\n${OTHERS}\n"
+
+          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
+          printf "%b" "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version and tag
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+
+          echo "$NEW_VERSION" > version
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version
+          git commit -m "chore(release): bump version to ${TAG} [skip ci]"
+          git push
+
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Collect assets
+        run: |
+          mkdir -p dist
+          cp tools/sshm/bin/sshm dist/sshm
+          cp tools/local-env/bin/local-env dist/local-env
+          cp tools/localz/bin/localz dist/localz
+          cp tools/check-dotfiles/bin/check-dotfiles dist/check-dotfiles
+          cp install.sh dist/install.sh
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body: ${{ steps.notes.outputs.notes }}
+          files: |
+            dist/sshm
+            dist/local-env
+            dist/localz
+            dist/check-dotfiles
+            dist/install.sh
