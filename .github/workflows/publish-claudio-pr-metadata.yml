@@ -1,0 +1,41 @@
+name: Apply Claudio DR PR metadata
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number: { description: Pull request number, required: true, type: string }
+      base_branch: { description: Expected base branch, required: true, default: main, type: string }
+      labels_json: { description: JSON array of labels, required: false, default: '[]', type: string }
+      assignees_json: { description: JSON array of assignees, required: false, default: '[]', type: string }
+      milestone_number: { description: Optional milestone number, required: false, type: string }
+      project_owner: { description: Optional Project owner, required: false, type: string }
+      project_number: { description: Optional Project number, required: false, type: string }
+      project_status: { description: Optional Project status, required: false, type: string }
+permissions: { contents: read }
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - id: claudio-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ vars.CLAUDIO_DR_CLIENT_ID }}
+          private-key: ${{ secrets.CLAUDIO_DR_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-issues: write
+          permission-pull-requests: write
+      - name: Apply and verify PR metadata as Claudio DR
+        env:
+          GH_TOKEN: ${{ steps.claudio-token.outputs.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          BASE_BRANCH: ${{ inputs.base_branch }}
+          LABELS_JSON: ${{ inputs.labels_json }}
+          ASSIGNEES_JSON: ${{ inputs.assignees_json }}
+          MILESTONE_NUMBER: ${{ inputs.milestone_number }}
+          PROJECT_OWNER: ${{ inputs.project_owner }}
+          PROJECT_NUMBER: ${{ inputs.project_number }}
+          PROJECT_STATUS: ${{ inputs.project_status }}
+          EXPECTED_AUTHOR: claudio-dr[bot]
+          PUBLISHER_APP_SLUG: ${{ steps.claudio-token.outputs.app-slug }}
+        run: bash .github/scripts/publish-pr-metadata.sh

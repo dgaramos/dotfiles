@@ -1,0 +1,39 @@
+name: Publish Claudio DR review
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number: { description: Pull request number, required: true, type: string }
+      event: { description: Review event, required: true, default: COMMENT, type: choice, options: [COMMENT] }
+      review_body: { description: Review summary in Markdown, required: false, default: '', type: string }
+      reviewed_head_sha: { description: Full PR head SHA reviewed, required: true, type: string }
+      inline_comments_json: { description: JSON array of path, line, and body findings, required: false, default: '[]', type: string }
+      replies_json: { description: JSON array of comment_id and body replies, required: false, default: '[]', type: string }
+      resolve_thread_ids_json: { description: JSON array of thread node IDs, required: false, default: '[]', type: string }
+permissions: { contents: read }
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - id: claudio-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ vars.CLAUDIO_DR_CLIENT_ID }}
+          private-key: ${{ secrets.CLAUDIO_DR_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-pull-requests: write
+      - name: Submit batched review and thread actions
+        env:
+          GH_TOKEN: ${{ steps.claudio-token.outputs.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          REVIEW_EVENT: ${{ inputs.event }}
+          REVIEW_BODY: ${{ inputs.review_body }}
+          REVIEWED_HEAD_SHA: ${{ inputs.reviewed_head_sha }}
+          INLINE_COMMENTS_JSON: ${{ inputs.inline_comments_json }}
+          REPLIES_JSON: ${{ inputs.replies_json }}
+          RESOLVE_THREAD_IDS_JSON: ${{ inputs.resolve_thread_ids_json }}
+          EXPECTED_AUTHOR: claudio-dr[bot]
+          PUBLISHER_APP_SLUG: ${{ steps.claudio-token.outputs.app-slug }}
+        run: bash .github/scripts/publish-review.sh

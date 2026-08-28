@@ -1,0 +1,32 @@
+name: Publish Claudio DR thread reply
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number: { description: Pull request number, required: true, type: string }
+      thread_id: { description: GraphQL review-thread ID, required: true, type: string }
+      body: { description: Reply body in Markdown, required: true, type: string }
+permissions: { contents: read }
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - id: claudio-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ vars.CLAUDIO_DR_CLIENT_ID }}
+          private-key: ${{ secrets.CLAUDIO_DR_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-pull-requests: write
+      - name: Reply and verify authorship
+        env:
+          GH_TOKEN: ${{ steps.claudio-token.outputs.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          THREAD_ID: ${{ inputs.thread_id }}
+          BODY: ${{ inputs.body }}
+          THREAD_ACTION: reply
+          EXPECTED_AUTHOR: claudio-dr[bot]
+          PUBLISHER_APP_SLUG: ${{ steps.claudio-token.outputs.app-slug }}
+        run: bash .github/scripts/publish-claudio-thread-action.sh

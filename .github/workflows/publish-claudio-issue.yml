@@ -1,0 +1,81 @@
+name: Publish Claudio DR issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Issue title
+        required: true
+        type: string
+      issue_number:
+        description: Existing issue to update (omit to create)
+        required: false
+        type: string
+      body:
+        description: Issue body in Markdown
+        required: true
+        type: string
+      labels:
+        description: Comma-separated labels
+        required: false
+        type: string
+      assignees:
+        description: Comma-separated assignees
+        required: false
+        type: string
+      milestone_number:
+        description: Optional numeric milestone number
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create a Claudio DR installation token
+        id: claudio-token
+        # v3.2.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          client-id: ${{ vars.CLAUDIO_DR_CLIENT_ID }}
+          private-key: ${{ secrets.CLAUDIO_DR_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-issues: write
+
+      - name: Create and verify issue
+        env:
+          GH_TOKEN: ${{ steps.claudio-token.outputs.token }}
+          TITLE: ${{ inputs.title }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          BODY: ${{ inputs.body }}
+          LABELS: ${{ inputs.labels }}
+          ASSIGNEES: ${{ inputs.assignees }}
+          MILESTONE_NUMBER: ${{ inputs.milestone_number }}
+          EXPECTED_AUTHOR: claudio-dr[bot]
+        run: |
+          set -euo pipefail
+          [[ -n "$TITLE" || -n "$ISSUE_NUMBER" ]] || { echo "title or issue_number is required" >&2; exit 1; }
+          [[ -n "$BODY" ]] || { echo "body is required" >&2; exit 1; }
+          [[ -z "$MILESTONE_NUMBER" || "$MILESTONE_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo "milestone_number must be a positive integer" >&2; exit 1; }
+          jq -n \
+            --arg title "$TITLE" \
+            --arg body "$BODY" \
+            --arg labels "$LABELS" \
+            --arg assignees "$ASSIGNEES" \
+            --arg milestone "$MILESTONE_NUMBER" \
+            '{title: $title, body: $body}
+             + (if $labels == "" then {} else {labels: ($labels | split(",") | map(select(length > 0)))} end)
+             + (if $assignees == "" then {} else {assignees: ($assignees | split(",") | map(select(length > 0)))} end)
+             + (if $milestone == "" then {} else {milestone: ($milestone | tonumber)} end)' > issue.json
+          if [[ -n "$ISSUE_NUMBER" ]]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" --input issue.json > created-issue.json
+          else
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues" --input issue.json > created-issue.json
+          fi
+          actual_author="$(jq -r '.user.login' created-issue.json)"
+          [[ "$actual_author" == "$EXPECTED_AUTHOR" ]] || { echo "unexpected issue author: $actual_author" >&2; exit 1; }
+          jq -r '"Created and verified Claudio DR issue #\(.number): \(.html_url)"' created-issue.json
