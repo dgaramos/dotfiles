@@ -278,6 +278,13 @@ def test_iterm2_profile_enables_ligatures():
     )
 
 
+def test_install_sh_exists():
+    install_sh = REPO_ROOT / "install.sh"
+    assert install_sh.exists(), "install.sh missing at repository root"
+    assert install_sh.stat().st_size > 0, "install.sh is empty"
+    assert install_sh.stat().st_mode & 0o111, "install.sh is not executable"
+
+
 def test_required_cli_tools_in_all_blocks():
     text = CLI_TOOLS_SCRIPT.read_text()
     install_lines = _extract_install_lines(text)
