@@ -1,5 +1,5 @@
-# claudio-dr: v0.1.29
-name: Apply Claudio DR PR metadata
+# cody-dr: v0.1.29
+name: Apply Cody DR PR metadata
 on:
   workflow_dispatch:
     inputs:
@@ -21,11 +21,11 @@ jobs:
         with:
           persist-credentials: false
           ref: refs/heads/main
-      - id: claudio-token
+      - id: cody-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          client-id: ${{ vars.CLAUDIO_DR_CLIENT_ID }}
-          private-key: ${{ secrets.CLAUDIO_DR_PRIVATE_KEY }}
+          client-id: ${{ vars.CODY_DR_CLIENT_ID }}
+          private-key: ${{ secrets.CODY_DR_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-issues: write
@@ -36,16 +36,16 @@ jobs:
         continue-on-error: true
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          client-id: ${{ vars.CLAUDIO_DR_CLIENT_ID }}
-          private-key: ${{ secrets.CLAUDIO_DR_PRIVATE_KEY }}
+          client-id: ${{ vars.CODY_DR_CLIENT_ID }}
+          private-key: ${{ secrets.CODY_DR_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-issues: read
           permission-pull-requests: read
           permission-organization-projects: write
-      - name: Apply and verify PR metadata as Claudio DR
+      - name: Apply and verify PR metadata as Cody DR
         env:
-          GH_TOKEN: ${{ steps.claudio-token.outputs.token }}
+          GH_TOKEN: ${{ steps.cody-token.outputs.token }}
           PROJECT_GH_TOKEN: ${{ steps.project-token.outputs.token }}
           METADATA_HELPER: .github/scripts/agent-workflows/apply-pr-metadata.sh
           PR_NUMBER: ${{ inputs.pr_number }}
@@ -57,6 +57,6 @@ jobs:
           PROJECT_OWNER: ${{ inputs.project_owner }}
           PROJECT_NUMBER: ${{ inputs.project_number }}
           PROJECT_STATUS: ${{ inputs.project_status }}
-          EXPECTED_AUTHOR: claudio-dr[bot]
-          PUBLISHER_APP_SLUG: ${{ steps.claudio-token.outputs.app-slug }}
+          EXPECTED_AUTHOR: cody-dr[bot]
+          PUBLISHER_APP_SLUG: ${{ steps.cody-token.outputs.app-slug }}
         run: bash .github/scripts/agent-workflows/publish-pr-metadata.sh
