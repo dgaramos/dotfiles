@@ -199,6 +199,22 @@ When prompted, enter profile `work` and role `ec2`.
 | `chsh: command not found` | Amazon Linux omits `chsh` by default | `sudo dnf install -y util-linux-user` |
 | `zsh: command not found` after apply | chezmoi installed manually skips bootstrap | `sudo dnf install -y zsh` then `chezmoi apply` |
 
+### Standalone tool installation
+
+The custom tools in `tools/` can be installed on any machine without chezmoi, straight from the latest GitHub Release:
+
+```bash
+# Install all tools
+curl -fsSL https://github.com/dgaramos/dotfiles/releases/latest/download/install.sh | bash
+
+# Install a single tool
+curl -fsSL https://github.com/dgaramos/dotfiles/releases/latest/download/install.sh | bash -s -- sshm
+```
+
+Binaries are written to `~/.local/bin`. No `sudo` is used, no system directories are touched, and no shell files are modified. If `~/.local/bin` is not on your `PATH`, the installer prints the line to add to your shell profile.
+
+The tools are Python scripts, so **Python 3 must be available on the target machine**.
+
 ## Bootstrap Scripts
 
 Scripts in `.chezmoiscripts/` run automatically during `chezmoi apply`:
@@ -263,6 +279,37 @@ private_dot_config/zsh/cmds.txt
 ```text
 tool <args>    # toolname: what it does
 ```
+
+## Releases
+
+Releases are fully automated. Every push to `main` runs `.github/workflows/release.yml`.
+
+### Pipeline
+
+1. **`test` job** — Python 3.12, `pytest tools/ tests/ -v --cov`, with coverage and test results uploaded to Codecov. It gates everything below: if it fails, no release is published.
+2. **`release` job** — computes the next version, writes and tags it, collects the tool binaries, and publishes the GitHub Release.
+
+### Versioning
+
+The next version is the root `version` file bumped according to the Conventional Commit subjects since the last `vX.Y.Z` tag:
+
+| Commit subject contains | Bump |
+|---|---|
+| `!:` or `BREAKING CHANGE` | major |
+| `feat(...)` / `feat:` | minor |
+| anything else | patch (default) |
+
+The workflow writes the new value to `version`, commits it as `github-actions[bot]` with the message `chore(release): bump version to vX.Y.Z [skip ci]`, then creates and pushes the `vX.Y.Z` tag. **Never edit `version` by hand.**
+
+`tools/.version` is a different, unrelated file: it is the chezmoi trigger that makes `run_onchange_install-tools` re-run on all machines. Bump it by hand after changing a tool binary. It has nothing to do with the release version.
+
+### Release notes
+
+Release notes are generated automatically from the commit subjects in the range, grouped into: Features, Bug Fixes, Documentation, Refactors, Tests, Chores, Other.
+
+### Published assets
+
+Each release publishes: `sshm`, `local-env`, `localz`, `check-dotfiles`, and `install.sh` — the same `install.sh` used by the standalone installation commands above.
 
 ## Testing
 

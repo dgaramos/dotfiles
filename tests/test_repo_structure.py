@@ -295,3 +295,119 @@ def test_required_cli_tools_in_all_blocks():
             f"'{tool}' must appear in all four package-manager blocks "
             f"(brew, apt, dnf, pacman); found only in: {matching}"
         )
+
+
+# --- Documentation contract: standalone install + release versioning ---------
+
+INSTALL_URL = (
+    "https://github.com/dgaramos/dotfiles/releases/latest/download/install.sh"
+)
+
+
+def _readme_text():
+    return (REPO_ROOT / "README.md").read_text()
+
+
+def _agents_text():
+    return (REPO_ROOT / "AGENTS.md").read_text()
+
+
+def _section(text, heading):
+    """Return the body of the section introduced by `heading`, or ''."""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.strip().lower() == heading.strip().lower():
+            level = len(line) - len(line.lstrip("#"))
+            body = []
+            in_fence = False
+            for nxt in lines[i + 1:]:
+                if nxt.lstrip().startswith("```"):
+                    in_fence = not in_fence
+                elif not in_fence and nxt.startswith("#"):
+                    if len(nxt) - len(nxt.lstrip("#")) <= level:
+                        break
+                body.append(nxt)
+            return "\n".join(body)
+    return ""
+
+
+def test_readme_documents_standalone_tool_install():
+    section = _section(_readme_text(), "## Installation")
+    assert section, "README.md has no '## Installation' section"
+    assert INSTALL_URL in section, (
+        "README Installation section must document the release install.sh URL"
+    )
+    assert "bash -s -- sshm" in section, (
+        "README Installation section must show the single-tool install form"
+    )
+
+
+def test_readme_documents_python3_requirement():
+    section = _section(_readme_text(), "## Installation")
+    assert "Python 3" in section, (
+        "README Installation section must state that Python 3 is required "
+        "on the target machine"
+    )
+
+
+def test_agents_md_documents_release_versioning():
+    assert _section(_agents_text(), "### Release versioning"), (
+        "AGENTS.md must have a '### Release versioning' section"
+    )
+
+
+def test_agents_md_distinguishes_version_files():
+    section = _section(_agents_text(), "### Release versioning")
+    assert "`version`" in section, (
+        "Release versioning section must name the root `version` file"
+    )
+    assert "`tools/.version`" in section, (
+        "Release versioning section must name `tools/.version` as distinct"
+    )
+    assert "release workflow" in section.lower(), (
+        "Release versioning section must state `version` is updated by the "
+        "release workflow"
+    )
+
+
+def test_readme_documents_release_trigger():
+    section = _section(_readme_text(), "## Releases")
+    assert section, "README.md must have a '## Releases' section"
+    assert ".github/workflows/release.yml" in section, (
+        "Releases section must name the release workflow file"
+    )
+    assert "main" in section and "push" in section.lower(), (
+        "Releases section must state the workflow runs on every push to main"
+    )
+    assert "pytest tools/ tests/" in section, (
+        "Releases section must state the test job gates the release"
+    )
+
+
+def test_readme_documents_release_assets():
+    section = _section(_readme_text(), "## Releases")
+    for asset in ("sshm", "local-env", "localz", "check-dotfiles", "install.sh"):
+        assert asset in section, f"Releases section must list asset '{asset}'"
+
+
+def test_readme_documents_release_notes_grouping():
+    section = _section(_readme_text(), "## Releases")
+    for group in ("Features", "Bug Fixes", "Documentation", "Refactors",
+                  "Tests", "Chores", "Other"):
+        assert group in section, (
+            f"Releases section must list release-note group '{group}'"
+        )
+
+
+def test_agents_md_documents_version_bump_rules():
+    section = _section(_agents_text(), "### Release versioning")
+    for rule in ("BREAKING CHANGE", "major", "minor", "patch"):
+        assert rule in section, (
+            f"Release versioning section must document the '{rule}' bump rule"
+        )
+    assert "[skip ci]" in section, (
+        "Release versioning section must document the automated bump commit"
+    )
+    assert "github-actions[bot]" in section, (
+        "Release versioning section must name the committing bot"
+    )
