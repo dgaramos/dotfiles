@@ -153,6 +153,22 @@ Installation is handled by `run_onchange_install-tools.sh.tmpl`. The `tools/` di
 
 For tool-specific rules, read the `AGENTS.md` inside the relevant `tools/<name>/` directory before editing.
 
+### Release versioning
+
+Releases are automated by `.github/workflows/release.yml`, which runs on every push to `main`. The `test` job (`pytest tools/ tests/ -v --cov`) gates the `release` job.
+
+- The `version` file at the repository root is the single source of truth for the release version.
+- It is updated automatically by the release workflow — never edit it manually. The workflow writes it, commits it as `github-actions[bot]` with the message `chore(release): bump version to vX.Y.Z [skip ci]`, and pushes the matching tag.
+- The bump is derived from the Conventional Commit subjects since the last `vX.Y.Z` tag: `!:` or `BREAKING CHANGE` gives a **major** bump, `feat(...)` gives a **minor** bump, and anything else gives a **patch** bump (the default).
+- Release notes are generated automatically and grouped by commit type, which is another reason commit subjects must follow the Conventional Commits format.
+- Each release publishes `sshm`, `local-env`, `localz`, `check-dotfiles`, and `install.sh` as assets.
+
+`tools/.version` is a **different file with an unrelated purpose**: it is the chezmoi reinstall trigger that makes `run_onchange_install-tools` re-run on all machines. Bump it by hand when a tool binary changes. Do not confuse it with the release version, and never bump one expecting the other to change.
+
+- The `version` file at the repository root is the single source of truth for the release version.
+- It is updated automatically by the release workflow — never edit it manually.
+- `tools/.version` is a separate chezmoi reinstall trigger for the custom tools and must not be confused with the release version. Bump it by hand when a tool binary changes.
+
 ### Interactive selection menus
 
 Any Python CLI in this repository that presents a list of options must use `select_interactive` — never numbered prompts. See `tools/sshm/CLAUDE.md` for the canonical implementation and usage pattern.
