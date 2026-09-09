@@ -305,7 +305,19 @@ The workflow writes the new value to `version`, commits it as `github-actions[bo
 
 ### Release notes
 
-Release notes are generated automatically from the commit subjects in the range, grouped into: Features, Bug Fixes, Documentation, Refactors, Tests, Chores, Other.
+Release notes are generated automatically from the commit subjects in the range, grouped into: BREAKING CHANGES, Features, Bug Fixes, Documentation, Refactors, Tests, Chores, Other.
+
+- **BREAKING CHANGES comes first.** Any commit whose subject contains `!:` or `BREAKING CHANGE` gets its own entry at the top of the notes, *in addition to* its normal type section. The change that drives a major bump is the first thing in the release body.
+- **Merge commits are excluded.** `Merge pull request #N from ...` describes nothing, so the generator reads the range with `git log --no-merges` and the individual commits are listed instead.
+- **Every entry links to its commit.** Each line ends with a short hash linking to the commit on GitHub.
+
+### When no release is cut
+
+A `gate` job decides whether the range is worth releasing. If every non-merge commit since the last tag is a `docs`, `chore`, `ci`, `build` or `test` commit, the `release` job is skipped entirely — no version bump, no tag, no release, and no re-upload of identical tool binaries. The gate prints an explicit reason to the workflow log and the run summary.
+
+A breaking change always releases, even when its type is one of the above.
+
+The `test` job is never gated: it runs on every push to `main`, whether or not a release follows.
 
 ### Published assets
 

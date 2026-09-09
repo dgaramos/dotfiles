@@ -31,8 +31,70 @@ jobs:
         with:
           files: junit.xml
 
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.gate.outputs.should_release }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether a release is needed
+        id: gate
+        run: |
+          LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+
+          if [ -z "$LAST_TAG" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${LAST_TAG}..HEAD"
+          fi
+
+          COMMITS=$(git log --no-merges --pretty=format:"%s" "$RANGE")
+
+          SHOULD_RELEASE="false"
+          REASON=""
+
+          if [ -z "$COMMITS" ]; then
+            REASON="No release: the range ${RANGE} contains no non-merge commits."
+          else
+            while IFS= read -r SUBJECT; do
+              [ -z "$SUBJECT" ] && continue
+
+              # A breaking change always releases, whatever its type.
+              if echo "$SUBJECT" | grep -qE '!:|\bBREAKING CHANGE\b'; then
+                SHOULD_RELEASE="true"
+                break
+              fi
+
+              # docs, chore, ci, build and test ship nothing on their own.
+              if echo "$SUBJECT" | grep -qE '^(docs|chore|ci|build|test)(\(.+\))?:'; then
+                continue
+              fi
+
+              SHOULD_RELEASE="true"
+              break
+            done <<< "$COMMITS"
+
+            if [ "$SHOULD_RELEASE" = "false" ]; then
+              REASON="No release: every commit in ${RANGE} is docs, chore, ci, build or test."
+            fi
+          fi
+
+          echo "should_release=${SHOULD_RELEASE}" >> "$GITHUB_OUTPUT"
+
+          if [ "$SHOULD_RELEASE" = "true" ]; then
+            echo "Releasable commits found in ${RANGE}."
+          else
+            echo "$REASON"
+            echo "$REASON" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   release:
-    needs: test
+    needs: [test, gate]
+    if: needs.gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,9 +111,9 @@ jobs:
           LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
 
           if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"%s" HEAD)
+            COMMITS=$(git log --no-merges --pretty=format:"%s" HEAD)
           else
-            COMMITS=$(git log --pretty=format:"%s" "${LAST_TAG}..HEAD")
+            COMMITS=$(git log --no-merges --pretty=format:"%s" "${LAST_TAG}..HEAD")
           fi
 
           MAJOR=0; MINOR=0; PATCH=0
@@ -85,33 +147,46 @@ jobs:
           LAST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
 
           if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"%s %H" HEAD)
+            COMMITS=$(git log --no-merges --pretty=format:"%H%x09%s" HEAD)
           else
-            COMMITS=$(git log --pretty=format:"%s %H" "${LAST_TAG}..HEAD")
+            COMMITS=$(git log --no-merges --pretty=format:"%H%x09%s" "${LAST_TAG}..HEAD")
           fi
 
+          COMMIT_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit"
+
           NOTES=""
+          BREAKING=""
           FEATS=""; FIXES=""; DOCS=""; REFACTORS=""; CHORES=""; TESTS=""; OTHERS=""
 
-          while IFS= read -r LINE; do
-            SUBJECT=$(echo "$LINE" | rev | cut -d' ' -f2- | rev)
-            if echo "$SUBJECT" | grep -qE '^feat(\(.+\))?:'; then
-              FEATS="${FEATS}- ${SUBJECT}\n"
-            elif echo "$SUBJECT" | grep -qE '^fix(\(.+\))?:'; then
-              FIXES="${FIXES}- ${SUBJECT}\n"
-            elif echo "$SUBJECT" | grep -qE '^docs(\(.+\))?:'; then
-              DOCS="${DOCS}- ${SUBJECT}\n"
-            elif echo "$SUBJECT" | grep -qE '^refactor(\(.+\))?:'; then
-              REFACTORS="${REFACTORS}- ${SUBJECT}\n"
-            elif echo "$SUBJECT" | grep -qE '^(chore|build|ci)(\(.+\))?:'; then
-              CHORES="${CHORES}- ${SUBJECT}\n"
-            elif echo "$SUBJECT" | grep -qE '^test(\(.+\))?:'; then
-              TESTS="${TESTS}- ${SUBJECT}\n"
+          while IFS=$'\t' read -r HASH SUBJECT; do
+            [ -z "$HASH" ] && continue
+
+            SHORT="${HASH:0:7}"
+            ENTRY="- ${SUBJECT} ([\`${SHORT}\`](${COMMIT_URL}/${HASH}))\n"
+
+            # A breaking change is listed in its own section as well as its type's.
+            if echo "$SUBJECT" | grep -qE '!:|\bBREAKING CHANGE\b'; then
+              BREAKING="${BREAKING}${ENTRY}"
+            fi
+
+            if echo "$SUBJECT" | grep -qE '^feat(\(.+\))?!?:'; then
+              FEATS="${FEATS}${ENTRY}"
+            elif echo "$SUBJECT" | grep -qE '^fix(\(.+\))?!?:'; then
+              FIXES="${FIXES}${ENTRY}"
+            elif echo "$SUBJECT" | grep -qE '^docs(\(.+\))?!?:'; then
+              DOCS="${DOCS}${ENTRY}"
+            elif echo "$SUBJECT" | grep -qE '^refactor(\(.+\))?!?:'; then
+              REFACTORS="${REFACTORS}${ENTRY}"
+            elif echo "$SUBJECT" | grep -qE '^(chore|build|ci)(\(.+\))?!?:'; then
+              CHORES="${CHORES}${ENTRY}"
+            elif echo "$SUBJECT" | grep -qE '^test(\(.+\))?!?:'; then
+              TESTS="${TESTS}${ENTRY}"
             else
-              OTHERS="${OTHERS}- ${SUBJECT}\n"
+              OTHERS="${OTHERS}${ENTRY}"
             fi
           done <<< "$COMMITS"
 
+          [ -n "$BREAKING" ]  && NOTES="${NOTES}## BREAKING CHANGES\n${BREAKING}\n"
           [ -n "$FEATS" ]     && NOTES="${NOTES}## Features\n${FEATS}\n"
           [ -n "$FIXES" ]     && NOTES="${NOTES}## Bug Fixes\n${FIXES}\n"
           [ -n "$DOCS" ]      && NOTES="${NOTES}## Documentation\n${DOCS}\n"
@@ -119,6 +194,10 @@ jobs:
           [ -n "$TESTS" ]     && NOTES="${NOTES}## Tests\n${TESTS}\n"
           [ -n "$CHORES" ]    && NOTES="${NOTES}## Chores\n${CHORES}\n"
           [ -n "$OTHERS" ]    && NOTES="${NOTES}## Other\n${OTHERS}\n"
+
+          # The chain above ends in a failing test whenever the last group is
+          # empty; without this the step would exit non-zero under `bash -e`.
+          :
 
           echo "notes<<EOF" >> "$GITHUB_OUTPUT"
           printf "%b" "$NOTES" >> "$GITHUB_OUTPUT"

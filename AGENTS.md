@@ -160,7 +160,8 @@ Releases are automated by `.github/workflows/release.yml`, which runs on every p
 - The `version` file at the repository root is the single source of truth for the release version.
 - It is updated automatically by the release workflow — never edit it manually. The workflow writes it, commits it as `github-actions[bot]` with the message `chore(release): bump version to vX.Y.Z [skip ci]`, and pushes the matching tag.
 - The bump is derived from the Conventional Commit subjects since the last `vX.Y.Z` tag: `!:` or `BREAKING CHANGE` gives a **major** bump, `feat(...)` gives a **minor** bump, and anything else gives a **patch** bump (the default).
-- Release notes are generated automatically and grouped by commit type, which is another reason commit subjects must follow the Conventional Commits format.
+- Not every push releases. A `gate` job skips the `release` job when every non-merge commit since the last tag is a `docs`, `chore`, `ci`, `build` or `test` commit — no bump, no tag, no release. A breaking change releases regardless of its type, and the `test` job runs either way. The gate logs why it skipped.
+- Release notes are generated automatically and grouped by commit type, which is another reason commit subjects must follow the Conventional Commits format. Breaking changes are listed first under `## BREAKING CHANGES`, merge commits are excluded, and every entry links to its commit.
 - Each release publishes `sshm`, `local-env`, `localz`, `check-dotfiles`, and `install.sh` as assets.
 
 `tools/.version` is a **different file with an unrelated purpose**: it is the chezmoi reinstall trigger that makes `run_onchange_install-tools` re-run on all machines. Bump it by hand when a tool binary changes. Do not confuse it with the release version, and never bump one expecting the other to change.
