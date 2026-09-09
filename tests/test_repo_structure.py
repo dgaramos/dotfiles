@@ -411,3 +411,213 @@ def test_agents_md_documents_version_bump_rules():
     assert "github-actions[bot]" in section, (
         "Release versioning section must name the committing bot"
     )
+
+
+# --- Release workflow contract: notes quality + docs-only skip ---------------
+
+RELEASE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "release.yml"
+NON_RELEASABLE_TYPES = ("docs", "chore", "ci", "build", "test")
+
+
+def _release_workflow_text():
+    return RELEASE_WORKFLOW.read_text()
+
+
+def _workflow_job(name):
+    """Return the body of the top-level job `name` from release.yml, or ''."""
+    lines = _release_workflow_text().splitlines()
+    header = f"  {name}:"
+    for i, line in enumerate(lines):
+        if line.rstrip() == header:
+            body = []
+            for nxt in lines[i + 1:]:
+                if nxt.strip() and not nxt.startswith("    "):
+                    break
+                body.append(nxt)
+            return "\n".join(body)
+    return ""
+
+
+def test_release_workflow_exists():
+    assert RELEASE_WORKFLOW.is_file(), "missing .github/workflows/release.yml"
+
+
+def test_release_gate_job_is_defined():
+    assert _workflow_job("gate"), (
+        "release.yml must define a 'gate' job that decides whether a release "
+        "is cut"
+    )
+
+
+def test_gate_job_outputs_should_release():
+    job = _workflow_job("gate")
+    assert "outputs:" in job and "should_release" in job, (
+        "the gate job must expose a 'should_release' output"
+    )
+
+
+def test_release_job_is_conditional_on_the_gate():
+    job = _workflow_job("release")
+    assert "needs:" in job and "gate" in job, (
+        "the release job must depend on the gate job"
+    )
+    assert "needs.gate.outputs.should_release" in job, (
+        "the release job must be skipped via an 'if:' on the gate output"
+    )
+
+
+def test_test_job_is_not_gated():
+    job = _workflow_job("test")
+    assert "should_release" not in job, (
+        "the test job must keep running even when no release is cut"
+    )
+
+
+def test_gate_treats_docs_and_chore_ranges_as_non_releasable():
+    job = _workflow_job("gate")
+    for commit_type in NON_RELEASABLE_TYPES:
+        assert commit_type in job, (
+            f"the gate job must classify '{commit_type}' commits as "
+            "non-releasable"
+        )
+
+
+def test_gate_still_releases_breaking_changes():
+    job = _workflow_job("gate")
+    assert "BREAKING CHANGE" in job and "!:" in job, (
+        "a breaking commit must release even when its type is non-releasable"
+    )
+
+
+def test_gate_logs_an_explicit_skip_reason():
+    job = _workflow_job("gate")
+    assert "No release" in job, (
+        "the gate job must print an explicit message stating why no release "
+        "was cut"
+    )
+
+
+def test_release_notes_emit_a_breaking_changes_section():
+    text = _release_workflow_text()
+    assert "## BREAKING CHANGES" in text, (
+        "release notes must include a dedicated '## BREAKING CHANGES' section"
+    )
+
+
+def test_breaking_changes_section_is_listed_first():
+    text = _release_workflow_text()
+    breaking = text.index("## BREAKING CHANGES")
+    for later in ("## Features", "## Bug Fixes", "## Other"):
+        assert breaking < text.index(later), (
+            f"'## BREAKING CHANGES' must be assembled before '{later}'"
+        )
+
+
+def test_release_notes_exclude_merge_commits():
+    text = _release_workflow_text()
+    assert "--no-merges" in text, (
+        "release notes must exclude merge commits with git log --no-merges"
+    )
+
+
+def test_release_notes_link_each_entry_to_its_commit():
+    text = _release_workflow_text()
+    assert "%H" in text, "the notes step must capture the commit hash"
+    assert "/commit" in text and "${COMMIT_URL}/${HASH}" in text, (
+        "each release-note entry must link to its commit URL"
+    )
+    assert "rev | cut -d' ' -f2- | rev" not in text, (
+        "the notes step must no longer strip and discard the commit hash"
+    )
+
+
+def test_readme_documents_release_notes_improvements():
+    section = _section(_readme_text(), "## Releases")
+    assert "BREAKING CHANGES" in section, (
+        "Releases section must document the BREAKING CHANGES group"
+    )
+    assert "merge commit" in section.lower(), (
+        "Releases section must state that merge commits are excluded"
+    )
+    assert "link" in section.lower(), (
+        "Releases section must state that entries link to their commit"
+    )
+
+
+def test_readme_documents_when_no_release_is_cut():
+    section = _section(_readme_text(), "## Releases")
+    for commit_type in NON_RELEASABLE_TYPES:
+        assert f"`{commit_type}`" in section, (
+            f"Releases section must list '{commit_type}' as non-releasable"
+        )
+    assert "test` job" in section, (
+        "Releases section must state the test job still runs when the "
+        "release is skipped"
+    )
+
+
+def test_agents_md_documents_the_release_skip_rule():
+    section = _section(_agents_text(), "### Release versioning")
+    assert "skip" in section.lower(), (
+        "Release versioning section must document that some ranges cut no "
+        "release"
+    )
+    for commit_type in NON_RELEASABLE_TYPES:
+        assert f"`{commit_type}`" in section, (
+            f"Release versioning section must list '{commit_type}' as "
+            "non-releasable"
+        )
+
+
+# --- _section() helper contract ---------------------------------------------
+
+def test_section_returns_empty_for_a_missing_heading():
+    doc = "# Title\n\nsome text\n\n## Present\n\nbody\n"
+    assert _section(doc, "## Absent") == ""
+
+
+def test_section_ignores_hashes_inside_fenced_code_blocks():
+    doc = (
+        "## Target\n"
+        "before\n"
+        "```bash\n"
+        "# this is a shell comment, not a heading\n"
+        "echo hi\n"
+        "```\n"
+        "after\n"
+        "## Next\n"
+        "excluded\n"
+    )
+    section = _section(doc, "## Target")
+    assert "before" in section
+    assert "echo hi" in section
+    assert "after" in section, (
+        "a '#' comment inside a fenced block must not terminate the section"
+    )
+    assert "excluded" not in section
+
+
+def test_section_stops_at_a_same_level_heading():
+    doc = "## Target\nkept\n## Sibling\ndropped\n"
+    section = _section(doc, "## Target")
+    assert "kept" in section and "dropped" not in section
+
+
+def test_section_stops_at_a_higher_level_heading():
+    doc = "## Target\nkept\n# Parent\ndropped\n"
+    section = _section(doc, "## Target")
+    assert "kept" in section and "dropped" not in section
+
+
+def test_section_includes_deeper_subheadings():
+    doc = "## Target\nkept\n### Child\nalso kept\n## Sibling\ndropped\n"
+    section = _section(doc, "## Target")
+    assert "kept" in section
+    assert "### Child" in section and "also kept" in section, (
+        "a deeper heading must not terminate the section"
+    )
+    assert "dropped" not in section
+
+
+def test_workflow_job_returns_empty_for_a_missing_job():
+    assert _workflow_job("no-such-job") == ""
