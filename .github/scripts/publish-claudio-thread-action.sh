@@ -33,7 +33,8 @@ done
 
 if [[ "$THREAD_ACTION" == reply ]]; then
   result="$(gh api graphql -f query='mutation($thread: ID!, $body: String!) { addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $thread, body: $body}) { comment { author { login } pullRequest { number repository { nameWithOwner } } } } }' -f thread="$THREAD_ID" -f body="$BODY")"
-  [[ "$(jq -r '.data.addPullRequestReviewThreadReply.comment.author.login' <<<"$result")" == "$EXPECTED_AUTHOR" ]] || { echo "unexpected reply author" >&2; exit 1; }
+  reply_author="$(jq -r '.data.addPullRequestReviewThreadReply.comment.author.login' <<<"$result")"
+  [[ "${reply_author%\[bot\]}" == "${EXPECTED_AUTHOR%\[bot\]}" ]] || { echo "unexpected reply author" >&2; exit 1; }
   [[ "$(jq -r '.data.addPullRequestReviewThreadReply.comment.pullRequest.number' <<<"$result")" == "$PR_NUMBER" ]] || { echo "reply target mismatch" >&2; exit 1; }
   [[ "$(jq -r '.data.addPullRequestReviewThreadReply.comment.pullRequest.repository.nameWithOwner' <<<"$result")" == "$expected_repository" ]] || { echo "reply repository mismatch" >&2; exit 1; }
 else
