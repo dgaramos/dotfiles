@@ -1,4 +1,7 @@
-# cody-dr: v0.1.29
+# cody-dr: v0.1.31
+# Thin dispatch stub for #260. Every publication behavior lives in the central
+# definition below; this file exists only because workflow_dispatch requires the
+# workflow to be present on this repository's default branch.
 name: Publish Cody DR review
 on:
   workflow_dispatch:
@@ -13,31 +16,19 @@ on:
 permissions: { contents: read }
 jobs:
   publish:
-    runs-on: ubuntu-latest
-    steps:
-      # v4
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          persist-credentials: false
-          ref: refs/heads/main
-      - id: cody-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-        with:
-          client-id: ${{ vars.CODY_DR_CLIENT_ID }}
-          private-key: ${{ secrets.CODY_DR_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-pull-requests: write
-      - name: Submit batched review and thread actions
-        env:
-          GH_TOKEN: ${{ steps.cody-token.outputs.token }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          REVIEW_EVENT: ${{ inputs.event }}
-          REVIEW_BODY: ${{ inputs.review_body }}
-          REVIEWED_HEAD_SHA: ${{ inputs.reviewed_head_sha }}
-          INLINE_COMMENTS_JSON: ${{ inputs.inline_comments_json }}
-          REPLIES_JSON: ${{ inputs.replies_json }}
-          RESOLVE_THREAD_IDS_JSON: ${{ inputs.resolve_thread_ids_json }}
-          EXPECTED_AUTHOR: cody-dr[bot]
-          PUBLISHER_APP_SLUG: ${{ steps.cody-token.outputs.app-slug }}
-        run: bash .github/scripts/agent-workflows/publish-review.sh
+    # The ref is the release surface: the catalog dogfoods @main, while an
+    # installed stub pins the protected release tag. See docs/workflow-releases.md.
+    uses: dgaramos/dr-agents/.github/workflows/reusable-publish-review.yml@workflows-v1
+    with:
+      catalog_ref: workflows-v1
+      agent: cody
+      client_id: ${{ vars.CODY_DR_CLIENT_ID }}
+      pr_number: ${{ inputs.pr_number }}
+      event: ${{ inputs.event }}
+      review_body: ${{ inputs.review_body }}
+      reviewed_head_sha: ${{ inputs.reviewed_head_sha }}
+      inline_comments_json: ${{ inputs.inline_comments_json }}
+      replies_json: ${{ inputs.replies_json }}
+      resolve_thread_ids_json: ${{ inputs.resolve_thread_ids_json }}
+    secrets:
+      app_private_key: ${{ secrets.CODY_DR_PRIVATE_KEY }}
