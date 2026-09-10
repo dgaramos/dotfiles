@@ -1,4 +1,7 @@
-# cody-dr: v0.1.29
+# cody-dr: v0.1.31
+# Thin dispatch stub for #260. Every publication behavior lives in the central
+# definition below; this file exists only because workflow_dispatch requires the
+# workflow to be present on this repository's default branch.
 name: Publish Cody DR thread reply
 on:
   workflow_dispatch:
@@ -9,28 +12,15 @@ on:
 permissions: { contents: read }
 jobs:
   publish:
-    runs-on: ubuntu-latest
-    steps:
-      # v4
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-          ref: refs/heads/main
-      - id: cody-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-        with:
-          client-id: ${{ vars.CODY_DR_CLIENT_ID }}
-          private-key: ${{ secrets.CODY_DR_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-pull-requests: write
-      - name: Reply and verify authorship
-        env:
-          GH_TOKEN: ${{ steps.cody-token.outputs.token }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          THREAD_ID: ${{ inputs.thread_id }}
-          BODY: ${{ inputs.body }}
-          THREAD_ACTION: reply
-          EXPECTED_AUTHOR: cody-dr[bot]
-          PUBLISHER_APP_SLUG: ${{ steps.cody-token.outputs.app-slug }}
-        run: bash .github/scripts/agent-workflows/publish-cody-thread-action.sh
+    # The ref is the release surface: the catalog dogfoods @main, while an
+    # installed stub pins the protected release tag. See docs/workflow-releases.md.
+    uses: dgaramos/dr-agents/.github/workflows/reusable-publish-reply.yml@workflows-v1
+    with:
+      catalog_ref: workflows-v1
+      agent: cody
+      client_id: ${{ vars.CODY_DR_CLIENT_ID }}
+      pr_number: ${{ inputs.pr_number }}
+      thread_id: ${{ inputs.thread_id }}
+      body: ${{ inputs.body }}
+    secrets:
+      app_private_key: ${{ secrets.CODY_DR_PRIVATE_KEY }}
