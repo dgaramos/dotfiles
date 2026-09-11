@@ -1,32 +1,36 @@
 # cody-dr: v0.1.33
-# Thin dispatch stub for #260. Every publication behavior lives in the central
+# Thin dispatch stub for #269. Every publication behavior lives in the central
 # definition below; this file exists only because workflow_dispatch requires the
 # workflow to be present on this repository's default branch.
-name: Publish Cody DR pull request
+name: Publish Cody DR issue comment
+
 on:
   workflow_dispatch:
     inputs:
-      title: { description: Pull request title, required: true, type: string }
-      body: { description: Completed pull request body, required: true, type: string }
-      head_branch: { description: Pushed branch in this repository, required: true, type: string }
-      base_branch: { description: Target branch, required: true, type: string }
-permissions: { contents: read }
+      issue_number:
+        description: Issue or pull request number to comment on
+        required: true
+        type: string
+      body:
+        description: Comment body in Markdown
+        required: true
+        type: string
+
+permissions:
+  contents: read
 jobs:
   publish:
     # The ref is the release surface: the catalog dogfoods @main, while an
     # installed stub pins the protected release tag. See docs/workflow-releases.md.
-    uses: dgaramos/dr-agents/.github/workflows/reusable-publish-pr.yml@workflows-v1
+    uses: dgaramos/dr-agents/.github/workflows/reusable-publish-issue-comment.yml@workflows-v1
     with:
       # This stub's own catalog version, passed so the definition can reject
       # a stub that predates an input it requires (dr-agents#268). Must equal
       # the marker at the top of this file; bin/check asserts it.
       stub_version: 0.1.33
-      catalog_ref: workflows-v1
       agent: cody
       client_id: ${{ vars.CODY_DR_CLIENT_ID }}
-      title: ${{ inputs.title }}
+      issue_number: ${{ inputs.issue_number }}
       body: ${{ inputs.body }}
-      head_branch: ${{ inputs.head_branch }}
-      base_branch: ${{ inputs.base_branch }}
     secrets:
       app_private_key: ${{ secrets.CODY_DR_PRIVATE_KEY }}
