@@ -175,6 +175,24 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <repository>
 
 When prompted, enter the profile (`personal` or `work`) and role (`mac`, `work-mac`, `homelab`, `steamdeck`, or `ec2`).
 
+### Steam Deck and Decky Loader
+
+The `steamdeck` host profile includes shortcuts for inspecting and maintaining Decky Loader from any shell session on the Steam Deck:
+
+```bash
+decky                 # open ~/homebrew
+decky_version         # show the installed loader version
+decky_status          # show the plugin_loader service status
+decky_restart         # restart the loader and show its status
+decky_logs            # show the latest 100 log lines
+decky_logs 300        # show a custom number of log lines
+decky_logs -f         # follow logs in real time
+decky_plugins         # list installed plugins and authors
+decky_update          # run the latest stable official installer
+```
+
+Use `dotcmds decky` to see the available Decky commands.
+
 ### EC2 (Amazon Linux, Graviton/ARM64)
 
 If `get.chezmoi.io` returns a 503, install chezmoi directly from GitHub:
