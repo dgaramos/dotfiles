@@ -65,19 +65,19 @@ decky_update() {  # decky: download and run the latest stable Decky installer
         return 1
     fi
 
-    local installer status
+    local installer exit_code
     installer=$(mktemp "${TMPDIR:-/tmp}/decky-installer.XXXXXX") || return 1
 
     curl --fail --location --show-error \
         "https://github.com/SteamDeckHomebrew/decky-installer/releases/latest/download/install_release.sh" \
         --output "$installer"
-    status=$?
+    exit_code=$?
 
-    if (( status == 0 )); then
+    if (( exit_code == 0 )); then
         sh "$installer"
-        status=$?
+        exit_code=$?
     fi
 
     command rm -f "$installer"
-    return "$status"
+    return "$exit_code"
 }

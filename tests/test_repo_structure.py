@@ -82,6 +82,19 @@ def test_cli_tools_script_exists():
     assert CLI_TOOLS_SCRIPT.exists(), "CLI tools install script not found"
 
 
+def test_starship_is_installed_in_persistent_user_bin():
+    text = CLI_TOOLS_SCRIPT.read_text()
+    assert '--bin-dir "$HOME/.local/bin"' in text
+    pacman_line = next(
+        line for line in text.splitlines()
+        if line.strip().startswith("install_pacman fzf")
+    )
+    assert "starship" not in pacman_line, (
+        "SteamOS updates replace pacman-managed system binaries; "
+        "Starship must be installed in ~/.local/bin"
+    )
+
+
 TMUX_ZSH_ALIASES = ["tm()", "tls=", "tks=", "td="]
 
 # Aliases that must have inline comments (descriptions)
