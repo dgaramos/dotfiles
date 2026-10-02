@@ -177,7 +177,7 @@ When prompted, enter the profile (`personal` or `work`) and role (`mac`, `work-m
 
 ### Steam Deck and Decky Loader
 
-The `steamdeck` host profile includes shortcuts for inspecting and maintaining Decky Loader from any shell session, whether opened in Konsole on the Steam Deck or through SSH:
+The `steamdeck` host profile includes shortcuts for inspecting and maintaining Decky Loader from any shell session on the Steam Deck:
 
 ```bash
 decky                 # open ~/homebrew
@@ -191,7 +191,7 @@ decky_plugins         # list installed plugins and authors
 decky_update          # run the latest stable official installer
 ```
 
-Open Konsole on the Steam Deck or connect from another managed machine with `ssh steamdeck`, then use `dotcmds decky` to see the available Decky commands.
+Use `dotcmds decky` to see the available Decky commands.
 
 ### EC2 (Amazon Linux, Graviton/ARM64)
 
