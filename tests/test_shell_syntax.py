@@ -23,3 +23,23 @@ def test_zsh_syntax(zsh_file):
     assert result.returncode == 0, (
         f"{zsh_file.name} has syntax errors:\n{result.stderr}"
     )
+
+
+def test_decky_update_does_not_use_reserved_zsh_parameters(tmp_path):
+    steamdeck_zsh = (
+        REPO_ROOT / "private_dot_config" / "zsh" / "hosts" / "steamdeck.zsh"
+    )
+    script = f"""
+source {steamdeck_zsh!s}
+curl() {{
+    print -r -- '#!/bin/sh\nexit 0' > "${{@[-1]}}"
+}}
+decky_update
+"""
+    result = subprocess.run(
+        ["zsh", "--no-rcs", "-c", script],
+        capture_output=True,
+        text=True,
+        env={"HOME": str(tmp_path), "TMPDIR": str(tmp_path), "PATH": "/usr/bin:/bin"},
+    )
+    assert result.returncode == 0, result.stderr

@@ -22,7 +22,18 @@ install_pacman() {
 
 install_starship() {
     if ! command -v starship >/dev/null 2>&1; then
-        curl -sS https://starship.rs/install.sh | sh -s -- --yes
+        mkdir -p "$HOME/.local/bin"
+        installer=$(mktemp "${TMPDIR:-/tmp}/starship-install.XXXXXX")
+        curl -fsSL https://starship.rs/install.sh -o "$installer" || {
+            rm -f "$installer"
+            return 1
+        }
+        sh "$installer" --yes --bin-dir "$HOME/.local/bin" || {
+            status=$?
+            rm -f "$installer"
+            return "$status"
+        }
+        rm -f "$installer"
     fi
 }
 
@@ -97,5 +108,6 @@ elif command -v dnf >/dev/null 2>&1; then
     install_starship
 
 elif command -v pacman >/dev/null 2>&1; then
-    install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta starship tmux
+    install_pacman fzf zoxide ripgrep fd bat eza direnv git-delta tmux
+    install_starship
 fi
