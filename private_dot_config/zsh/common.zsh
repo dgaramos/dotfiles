@@ -176,6 +176,8 @@ fi
 dotcmds() {  # shell: list aliases, functions and app commands; "apps" for app-only view
     local zsh_files=(
         "$HOME/.config/zsh/common.zsh"
+        "$HOME/.config/zsh/${DOTFILES_PROFILE}.zsh"
+        "$HOME/.config/zsh/hosts/${DOTFILES_ROLE}.zsh"
         "$HOME/.config/zsh/local.zsh"
     )
     local cmds_file="$HOME/.config/zsh/cmds.txt"

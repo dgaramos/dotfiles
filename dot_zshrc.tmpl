@@ -13,6 +13,9 @@ plugins=(
 
 source "$ZSH/oh-my-zsh.sh"
 
+export DOTFILES_PROFILE="{{ .profile }}"
+export DOTFILES_ROLE="{{ .role }}"
+
 source "$HOME/.config/zsh/common.zsh"
 
 {{ if eq .profile "personal" -}}
