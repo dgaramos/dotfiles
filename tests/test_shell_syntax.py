@@ -32,7 +32,7 @@ def test_decky_update_does_not_use_reserved_zsh_parameters(tmp_path):
     script = f"""
 source {steamdeck_zsh!s}
 curl() {{
-    print -r -- '#!/bin/sh\nexit 0' > "${{@[-1]}}"
+    print -r -- '#!/bin/sh\n[ -x "$0" ]' > "${{@[-1]}}"
 }}
 decky_update
 """

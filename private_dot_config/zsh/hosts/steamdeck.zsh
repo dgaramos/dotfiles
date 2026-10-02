@@ -74,6 +74,11 @@ decky_update() {  # decky: download and run the latest stable Decky installer
     exit_code=$?
 
     if (( exit_code == 0 )); then
+        chmod +x "$installer"
+        exit_code=$?
+    fi
+
+    if (( exit_code == 0 )); then
         sh "$installer"
         exit_code=$?
     fi
